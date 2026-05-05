@@ -1,0 +1,2414 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VINANO – Real Estate AI Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <style>
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0B0B0B;
+      --card:      #1A1A1A;
+      --card-2:    #141414;
+      --accent:    #7DD3D8;
+      --accent-dim: rgba(125,211,216,0.15);
+      --white:     #FFFFFF;
+      --off-white: #F5F5F5;
+      --muted:     #888888;
+      --border:    rgba(255,255,255,0.07);
+      --scene-dur: 8000;
+    }
+
+    html, body {
+      width: 100%; height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--white);
+      font-family: 'Inter Tight', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Grain overlay ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 1;
+      pointer-events: none;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      background-size: 180px 180px;
+      opacity: 0.35;
+    }
+
+    /* ── Particle canvas ── */
+    #particles { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+    /* ── Main wrapper ── */
+    .shell {
+      position: relative; z-index: 2;
+      width: 100vw; height: 100vh;
+      display: flex; flex-direction: column;
+    }
+
+    /* ── Header bar ── */
+    .hdr {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 32px;
+      pointer-events: none;
+    }
+
+    /* Logo */
+    .logo {
+      display: flex; align-items: center; gap: 10px;
+      pointer-events: auto;
+    }
+    .logo-icon {
+      width: 38px; height: 38px;
+      position: relative; flex-shrink: 0;
+    }
+    .logo-text {
+      display: flex; flex-direction: column; line-height: 1;
+    }
+    .logo-name {
+      font-size: 16px; font-weight: 700; letter-spacing: 0.12em;
+      color: var(--white);
+    }
+    .logo-sub {
+      font-size: 8px; font-weight: 400; letter-spacing: 0.25em;
+      color: var(--accent); margin-top: 2px;
+    }
+
+    /* Controls cluster (top-right) */
+    .controls {
+      display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
+      pointer-events: auto;
+    }
+    .scene-counter {
+      font-size: 11px; font-weight: 500; letter-spacing: 0.18em;
+      color: var(--off-white); opacity: 0.7;
+    }
+    .ctrl-row {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .ctrl-btn {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; color: var(--off-white); transition: all .2s;
+      backdrop-filter: blur(8px);
+    }
+    .ctrl-btn:hover { background: rgba(125,211,216,0.15); border-color: var(--accent); color: var(--accent); }
+    .ctrl-btn svg { width: 14px; height: 14px; }
+    .ctrl-btn.play { width: 36px; height: 36px; background: var(--accent); border-color: transparent; color: var(--bg); }
+    .ctrl-btn.play:hover { background: #9de4e8; }
+
+    /* Scene dots */
+    .dots {
+      display: flex; align-items: center; gap: 5px;
+    }
+    .dot {
+      width: 20px; height: 3px; border-radius: 2px;
+      background: rgba(255,255,255,0.2);
+      cursor: pointer; transition: all .3s;
+      position: relative; overflow: hidden;
+    }
+    .dot.active {
+      background: var(--accent);
+      width: 28px;
+    }
+    .dot .dot-fill {
+      position: absolute; top: 0; left: 0; height: 100%;
+      background: var(--accent); width: 0%;
+      transition: none;
+    }
+    .dot.active .dot-fill { animation: none; }
+
+    /* Progress bar (top) */
+    .progress-bar {
+      position: fixed; top: 0; left: 0; z-index: 200;
+      height: 2px; background: var(--accent);
+      width: 0%; transition: none;
+      box-shadow: 0 0 8px var(--accent);
+    }
+
+    /* ── Scene container ── */
+    .scenes { position: fixed; inset: 0; }
+    .scene {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; filter: blur(6px);
+      transition: opacity 0.6s cubic-bezier(0.4,0,0.2,1), filter 0.6s cubic-bezier(0.4,0,0.2,1);
+      pointer-events: none;
+      padding: 80px 32px 40px;
+    }
+    .scene.active {
+      opacity: 1; filter: blur(0px);
+      pointer-events: auto;
+    }
+
+    /* ── Placeholder scene cards ── */
+    .placeholder {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 16px; text-align: center;
+      width: 100%; max-width: 640px;
+    }
+    .placeholder-num {
+      font-size: 96px; font-weight: 800; letter-spacing: -0.04em;
+      color: rgba(125,211,216,0.08); line-height: 1;
+      user-select: none;
+    }
+    .placeholder-label {
+      font-size: 13px; font-weight: 500; letter-spacing: 0.2em;
+      color: var(--accent); text-transform: uppercase; opacity: 0.6;
+    }
+    .placeholder-title {
+      font-size: 28px; font-weight: 700; color: rgba(255,255,255,0.15);
+      letter-spacing: -0.01em;
+    }
+    .placeholder-hint {
+      font-size: 12px; color: var(--muted); letter-spacing: 0.05em;
+      margin-top: 8px;
+      padding: 8px 20px;
+      border: 1px dashed rgba(125,211,216,0.2);
+      border-radius: 6px;
+    }
+    .placeholder-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 10px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
+      color: var(--accent); background: var(--accent-dim);
+      border: 1px solid rgba(125,211,216,0.25);
+      border-radius: 20px; padding: 5px 14px;
+    }
+
+    /* ── Glassmorphism helper ── */
+    .glass {
+      background: rgba(26,26,26,0.7);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+    }
+
+    /* ── Keyboard hint ── */
+    .kbd-hint {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      z-index: 100;
+      display: flex; gap: 12px; align-items: center;
+      font-size: 11px; color: rgba(255,255,255,0.2);
+      letter-spacing: 0.08em;
+      pointer-events: none;
+      transition: opacity 0.4s;
+    }
+    .kbd-hint kbd {
+      display: inline-flex; align-items: center; justify-content: center;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 4px; padding: 2px 6px;
+      font-family: inherit; font-size: 10px;
+    }
+    .kbd-hint.hidden { opacity: 0; }
+
+    /* ── Scene 1: Exposé-Anfrage ── */
+    .s1-bg {
+      position: absolute; inset: 0; z-index: -1;
+      background-size: cover; background-position: center 65%;
+      filter: blur(14px) brightness(0.18);
+      transform: scale(1.08);
+    }
+
+    .s1-wrap {
+      display: flex; gap: 20px; align-items: flex-start;
+      width: 100%; max-width: 1100px;
+    }
+
+    .s1-listing { flex: 1.5; padding: 32px; }
+    .s1-form-card { flex: 1; padding: 32px; }
+
+    .scene.active .s1-listing {
+      animation: s1-in-left 0.7s cubic-bezier(.25,.46,.45,.94) both;
+    }
+    .scene.active .s1-form-card {
+      animation: s1-in-right 0.7s cubic-bezier(.25,.46,.45,.94) 0.12s both;
+    }
+    @keyframes s1-in-left {
+      from { opacity: 0; transform: translateX(-28px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes s1-in-right {
+      from { opacity: 0; transform: translateX(28px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    .s1-location {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 11px; font-weight: 600; letter-spacing: 0.2em;
+      color: var(--accent); text-transform: uppercase; margin-bottom: 16px;
+    }
+    .s1-live-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--accent);
+      animation: s1-pulse 2s ease-in-out infinite;
+    }
+    @keyframes s1-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(125,211,216,0.5); }
+      50%       { box-shadow: 0 0 0 5px rgba(125,211,216,0); }
+    }
+
+    .s1-title {
+      font-size: 40px; font-weight: 800; line-height: 1.08;
+      letter-spacing: -0.025em; margin-bottom: 18px; color: var(--white);
+    }
+    .s1-title-muted { color: rgba(255,255,255,0.5); }
+
+    .s1-price {
+      font-size: 32px; font-weight: 700; letter-spacing: -0.02em;
+      color: var(--accent); margin-bottom: 16px;
+    }
+
+    .s1-specs {
+      display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;
+    }
+    .s1-spec {
+      display: flex; align-items: center; gap: 7px;
+      font-size: 13px; color: rgba(255,255,255,0.55);
+    }
+
+    .s1-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr; gap: 6px; height: 190px;
+    }
+    .s1-grid img {
+      width: 100%; height: 100%;
+      object-fit: cover; border-radius: 6px;
+    }
+    .s1-grid img:first-child { grid-row: 1 / 3; }
+
+    .s1-form-title {
+      font-size: 22px; font-weight: 700; color: var(--white); margin-bottom: 4px;
+    }
+    .s1-form-sub {
+      font-size: 13px; color: var(--muted); margin-bottom: 26px;
+    }
+    .s1-field { margin-bottom: 14px; }
+    .s1-field label {
+      display: block; font-size: 10px; font-weight: 600;
+      letter-spacing: 0.15em; color: var(--muted); margin-bottom: 6px;
+    }
+    .s1-input {
+      width: 100%; padding: 13px 16px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px; color: var(--white);
+      font-size: 14px; font-family: 'Inter Tight', sans-serif;
+      outline: none;
+    }
+
+    .s1-btn-idle {
+      width: 100%; padding: 15px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      color: rgba(255,255,255,0.35); font-family: 'Inter Tight', sans-serif;
+      font-size: 15px; font-weight: 600;
+      cursor: default; margin-top: 8px;
+    }
+
+    .s1-btn-sent {
+      width: 100%; padding: 15px;
+      background: var(--accent); border: none; border-radius: 10px;
+      color: var(--bg); font-family: 'Inter Tight', sans-serif;
+      font-size: 15px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      cursor: default; margin-top: 8px;
+    }
+
+    .s1-ai-note {
+      text-align: center; margin-top: 12px;
+      font-size: 12px; color: var(--accent); letter-spacing: 0.04em;
+      transition: opacity 0.5s;
+    }
+
+    /* ── Scene 2: AI-Anruf ── */
+
+    /* Atmospheric background: two layered radial glows */
+    .s2-atmo {
+      position: absolute; inset: 0; z-index: -1; pointer-events: none;
+      background:
+        radial-gradient(ellipse 50% 35% at 50% 32%, rgba(125,211,216,0.09) 0%, transparent 55%),
+        radial-gradient(ellipse 90% 25% at 50% 58%, rgba(125,211,216,0.03) 0%, transparent 65%);
+    }
+
+    .s2-wrap {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 28px; width: 100%;
+    }
+
+    /* Entry animations */
+    .scene.active .s2-identity  { animation: s2-up 1s cubic-bezier(.16,1,.3,1) both; }
+    .scene.active .s2-wave-wrap { animation: s2-up 1s cubic-bezier(.16,1,.3,1) 0.12s both; }
+    .scene.active .s2-sub-panel { animation: s2-up 1s cubic-bezier(.16,1,.3,1) 0.22s both; }
+    @keyframes s2-up {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Identity cluster – no card, elements float on bg */
+    .s2-identity {
+      display: flex; flex-direction: column; align-items: center; gap: 16px;
+    }
+
+    /* Logo zone */
+    .s2-logo-zone {
+      position: relative; width: 100px; height: 100px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .s2-logo-halo {
+      position: absolute; inset: -40px; border-radius: 50%; pointer-events: none;
+      background: radial-gradient(circle, rgba(125,211,216,0.22) 0%, rgba(125,211,216,0.06) 38%, transparent 65%);
+      animation: s2-halo-breathe 3.5s ease-in-out infinite;
+    }
+    @keyframes s2-halo-breathe {
+      0%, 100% { opacity: 0.7; transform: scale(1); }
+      50%       { opacity: 1;   transform: scale(1.12); }
+    }
+    .s2-ring {
+      position: absolute; border-radius: 50%;
+      border: 1px solid rgba(125,211,216,0.22);
+      width: 100px; height: 100px;
+      animation: s2-ring-expand 3.3s ease-out infinite;
+    }
+    .s2-r2 { animation-delay: 1.1s; }
+    .s2-r3 { animation-delay: 2.2s; }
+    @keyframes s2-ring-expand {
+      0%   { transform: scale(1);   opacity: 0.6; }
+      100% { transform: scale(3.4); opacity: 0;   }
+    }
+    .s2-logo-img {
+      width: 72px; height: 72px; object-fit: contain; position: relative; z-index: 1;
+      filter: drop-shadow(0 0 20px rgba(125,211,216,0.45)) drop-shadow(0 0 48px rgba(125,211,216,0.18));
+      animation: s2-logo-pulse 3.5s ease-in-out infinite;
+    }
+    @keyframes s2-logo-pulse {
+      0%, 100% { filter: drop-shadow(0 0 20px rgba(125,211,216,0.45)) drop-shadow(0 0 48px rgba(125,211,216,0.18)); }
+      50%       { filter: drop-shadow(0 0 30px rgba(125,211,216,0.7))  drop-shadow(0 0 64px rgba(125,211,216,0.3)); }
+    }
+
+    /* Status row */
+    .s2-status-row {
+      display: flex; align-items: center; gap: 9px;
+    }
+    .s2-dot {
+      width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex-shrink: 0;
+      animation: s2-dot-beat 2s ease-in-out infinite;
+    }
+    @keyframes s2-dot-beat {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(125,211,216,0.7); }
+      50%       { box-shadow: 0 0 0 7px rgba(125,211,216,0); }
+    }
+    .s2-status-lbl {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.26em;
+      color: var(--accent); text-transform: uppercase;
+    }
+
+    /* Meta row */
+    .s2-meta {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 14px; color: rgba(255,255,255,0.32);
+      letter-spacing: 0.05em; font-variant-numeric: tabular-nums;
+    }
+    .s2-msep { opacity: 0.3; }
+
+    /* Full-width waveform */
+    .s2-wave-wrap { width: 100%; }
+    #s2-wave { width: 100%; height: 100px; display: block; }
+
+    /* Subtitle panel */
+    .s2-sub-panel {
+      width: 100%; max-width: 800px;
+      padding: 32px 44px;
+      border-color: rgba(125,211,216,0.08);
+      min-height: 116px;
+      display: flex; align-items: center;
+      box-shadow: 0 0 0 1px rgba(125,211,216,0.05), 0 24px 48px rgba(0,0,0,0.35);
+    }
+    .s2-sub-text {
+      font-size: 23px; font-weight: 500; line-height: 1.65;
+      letter-spacing: -0.01em; width: 100%; text-align: center;
+    }
+    .s2-word { display: inline; transition: color 0.08s; }
+    .s2-word.pending { color: rgba(255,255,255,0.2); }
+    .s2-word.current { color: var(--accent); }
+    .s2-word.spoken  { color: rgba(255,255,255,0.9); }
+
+    /* ── Scene 3: Lead-Score Dashboard ── */
+    .s3-wrap {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 14px; width: 100%; max-width: 980px;
+    }
+
+    .s3-hdr {
+      display: flex; align-items: center; gap: 16px; opacity: 0;
+    }
+    .s3-hdr-badge {
+      display: flex; align-items: center; gap: 7px;
+      font-size: 11px; font-weight: 700; letter-spacing: 0.22em;
+      color: var(--accent); text-transform: uppercase;
+    }
+    .s3-hdr-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--accent); flex-shrink: 0;
+      animation: s2-dot-beat 2s ease-in-out infinite;
+    }
+    .s3-hdr-time {
+      font-size: 12px; color: rgba(255,255,255,0.3); letter-spacing: 0.04em;
+    }
+
+    .s3-main {
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px; width: 100%;
+    }
+    .s3-col { display: flex; flex-direction: column; gap: 12px; }
+
+    /* Premium card – layered depth */
+    .s3-card {
+      background: linear-gradient(158deg, rgba(26,26,26,0.9) 0%, rgba(14,14,14,0.95) 100%);
+      border: 1px solid rgba(255,255,255,0.065);
+      border-radius: 14px; padding: 20px;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.07),
+        0 20px 40px rgba(0,0,0,0.5),
+        0 4px 8px rgba(0,0,0,0.3);
+      opacity: 0; /* GSAP animates in */
+    }
+    .s3-card-title {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.2em;
+      color: rgba(255,255,255,0.35); text-transform: uppercase; margin-bottom: 14px;
+    }
+    .s3-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 14px 0; }
+
+    /* Profile card */
+    .s3-avatar-row { display: flex; align-items: center; gap: 12px; }
+    .s3-avatar {
+      width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0;
+      background: linear-gradient(135deg, rgba(125,211,216,0.9) 0%, rgba(60,155,160,0.95) 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; font-weight: 800; color: #0B0B0B; letter-spacing: 0.05em;
+      box-shadow: 0 0 0 2px rgba(125,211,216,0.25), 0 4px 16px rgba(125,211,216,0.15);
+    }
+    .s3-lead-name {
+      font-size: 15px; font-weight: 700; color: var(--white);
+      letter-spacing: -0.01em; margin-bottom: 6px;
+    }
+    .s3-qual-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 9px; font-weight: 700; letter-spacing: 0.18em; color: var(--accent);
+      background: rgba(125,211,216,0.1); border: 1px solid rgba(125,211,216,0.22);
+      border-radius: 20px; padding: 3px 10px;
+    }
+    .s3-qual-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
+
+    .s3-detail-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .s3-detail-row:last-child { border-bottom: none; }
+    .s3-dl { font-size: 11px; color: rgba(255,255,255,0.32); }
+    .s3-dv { font-size: 11px; color: rgba(255,255,255,0.82); font-weight: 500; text-align: right; max-width: 58%; }
+
+    /* Score card */
+    .s3-score-card {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 14px; padding: 28px 20px; text-align: center;
+    }
+    .s3-score-title {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.2em;
+      color: rgba(255,255,255,0.3); text-transform: uppercase;
+    }
+    .s3-ring-wrap {
+      position: relative; width: 130px; height: 130px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .s3-ring-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+    .s3-ring-center { position: relative; z-index: 1; display: flex; align-items: baseline; gap: 1px; }
+    .s3-score-num {
+      font-size: 52px; font-weight: 800; letter-spacing: -0.05em;
+      color: var(--white); line-height: 1;
+    }
+    .s3-score-max { font-size: 18px; font-weight: 400; color: rgba(255,255,255,0.28); }
+    .s3-score-desc { font-size: 12px; color: rgba(255,255,255,0.4); }
+    .s3-score-tier {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.14em; color: var(--accent);
+    }
+    .s3-tier-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
+
+    /* Bar chart */
+    .s3-bar-list { display: flex; flex-direction: column; gap: 13px; }
+    .s3-bar-item { display: flex; flex-direction: column; gap: 5px; }
+    .s3-bar-meta { display: flex; justify-content: space-between; align-items: center; }
+    .s3-bar-meta > span:first-child { font-size: 11px; color: rgba(255,255,255,0.5); }
+    .s3-bar-pct {
+      font-size: 11px; font-weight: 600; color: var(--accent);
+      font-variant-numeric: tabular-nums;
+    }
+    .s3-bar-track { height: 5px; border-radius: 3px; background: rgba(255,255,255,0.07); overflow: hidden; }
+    .s3-bar-fill {
+      height: 100%; width: 0%; border-radius: 3px;
+      background: linear-gradient(to right, #7DD3D8, #9de8ec);
+      box-shadow: 0 0 6px rgba(125,211,216,0.35);
+    }
+
+    /* Actions card */
+    .s3-actions-card { flex: 1; }
+    .s3-action-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+      opacity: 0; /* GSAP animates in */
+    }
+    .s3-action-item:last-child { border-bottom: none; }
+    .s3-act-check {
+      width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .s3-act-check.done {
+      background: rgba(125,211,216,0.12); border: 1px solid rgba(125,211,216,0.28);
+      color: var(--accent);
+    }
+    .s3-act-check.pending {
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    }
+    .s3-act-loader {
+      width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.35);
+      animation: s3-loader 1.4s ease-in-out infinite;
+    }
+    @keyframes s3-loader { 0%,100%{opacity:0.25} 50%{opacity:1} }
+    .s3-act-title { font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.85); }
+    .s3-act-sub { font-size: 10px; color: rgba(255,255,255,0.28); margin-top: 1px; }
+
+    /* ── Scene 4: Terminvermittlung ── */
+    .s4-wrap {
+      display: flex; gap: 28px; align-items: flex-start;
+      width: 100%; max-width: 980px;
+    }
+
+    /* LEFT column */
+    .s4-left { flex: 1; display: flex; flex-direction: column; gap: 14px; }
+
+    .s4-sys-hdr { display: flex; flex-direction: column; gap: 4px; }
+    .s4-sys-badge {
+      display: flex; align-items: center; gap: 7px;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.22em;
+      color: rgba(255,255,255,0.35); text-transform: uppercase;
+    }
+    .s4-sys-dot {
+      width: 5px; height: 5px; border-radius: 50%; background: var(--accent);
+      animation: s2-dot-beat 2s ease-in-out infinite;
+    }
+    .s4-sys-title {
+      font-size: 20px; font-weight: 700; color: var(--white);
+      letter-spacing: -0.02em;
+    }
+    .s4-sys-sub { font-size: 12px; color: rgba(255,255,255,0.32); }
+    .s4-ac { color: var(--accent); }
+
+    /* Check items */
+    .s4-checks { display: flex; flex-direction: column; gap: 8px; }
+    .s4-check-item {
+      display: flex; align-items: center; gap: 9px;
+      font-size: 12px; color: rgba(255,255,255,0.65);
+      opacity: 0;
+    }
+    .s4-chk-circle {
+      width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+      background: rgba(125,211,216,0.12); border: 1px solid rgba(125,211,216,0.3);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--accent);
+    }
+
+    /* Slot grid */
+    .s4-slots {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+    }
+    .s4-slot {
+      background: linear-gradient(160deg, rgba(24,24,24,0.9) 0%, rgba(14,14,14,0.95) 100%);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 12px; padding: 12px 14px;
+      display: flex; flex-direction: column; gap: 2px;
+      opacity: 0;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 4px 12px rgba(0,0,0,0.35);
+    }
+    .s4-slot-sel {
+      border-color: rgba(125,211,216,0.35);
+      box-shadow: 0 0 0 1px rgba(125,211,216,0.15), inset 0 1px 0 rgba(125,211,216,0.08), 0 4px 16px rgba(125,211,216,0.1);
+    }
+    .s4-sl-day { font-size: 10px; font-weight: 600; letter-spacing: 0.12em; color: rgba(255,255,255,0.35); text-transform: uppercase; }
+    .s4-sl-date { font-size: 13px; font-weight: 700; color: var(--white); }
+    .s4-sl-time { font-size: 18px; font-weight: 800; letter-spacing: -0.02em; color: var(--white); margin: 2px 0; }
+    .s4-sl-badge {
+      font-size: 9px; font-weight: 600; letter-spacing: 0.1em;
+      color: rgba(255,255,255,0.3); text-transform: uppercase;
+    }
+    .s4-sl-opt { color: var(--accent); }
+
+    /* Appointment card */
+    .s4-appt {
+      padding: 16px 20px; border-radius: 14px; opacity: 0;
+      border-color: rgba(125,211,216,0.14);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 8px 24px rgba(0,0,0,0.4);
+    }
+    .s4-appt-lbl {
+      display: flex; align-items: center; gap: 7px;
+      font-size: 9px; font-weight: 700; letter-spacing: 0.2em;
+      color: var(--accent); text-transform: uppercase; margin-bottom: 10px;
+    }
+    .s4-appt-dot {
+      width: 5px; height: 5px; border-radius: 50%; background: var(--accent);
+      animation: s2-dot-beat 2s ease-in-out infinite;
+    }
+    .s4-appt-date { font-size: 16px; font-weight: 700; color: var(--white); letter-spacing: -0.01em; }
+    .s4-appt-time { font-size: 24px; font-weight: 800; letter-spacing: -0.03em; color: var(--white); margin: 2px 0 8px; }
+    .s4-appt-details { display: flex; align-items: center; gap: 8px; font-size: 11px; color: rgba(255,255,255,0.4); }
+    .s4-appt-sep { opacity: 0.4; }
+
+    /* RIGHT: Phone */
+    .s4-right { flex-shrink: 0; opacity: 0; }
+    .s4-phone {
+      width: 272px; height: 500px;
+      border-radius: 38px; overflow: hidden;
+      background: #0B141A;
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.1),
+        0 0 0 8px rgba(255,255,255,0.03),
+        0 28px 56px rgba(0,0,0,0.7),
+        0 8px 16px rgba(0,0,0,0.5);
+      display: flex; flex-direction: column;
+    }
+
+    /* WhatsApp header */
+    .s4-wa-hdr {
+      display: flex; align-items: center; gap: 9px;
+      padding: 10px 12px 10px 8px;
+      background: #1F2C34;
+      flex-shrink: 0;
+    }
+    .s4-wa-back { font-size: 22px; color: rgba(255,255,255,0.5); line-height: 1; padding: 0 4px; }
+    .s4-wa-avatar {
+      width: 34px; height: 34px; border-radius: 50%; overflow: hidden; flex-shrink: 0;
+      background: rgba(125,211,216,0.15); border: 1px solid rgba(125,211,216,0.2);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .s4-wa-avatar img { width: 20px; height: 20px; object-fit: contain; }
+    .s4-wa-name { font-size: 13px; font-weight: 600; color: #E9EDEF; }
+    .s4-wa-verified { color: #53BDEB; font-size: 11px; }
+    .s4-wa-online { font-size: 11px; color: rgba(255,255,255,0.45); }
+    .s4-wa-more { margin-left: auto; font-size: 18px; color: rgba(255,255,255,0.4); }
+
+    /* Chat area */
+    .s4-wa-chat {
+      flex: 1; overflow-y: auto; padding: 12px 10px;
+      display: flex; flex-direction: column; gap: 6px;
+      scroll-behavior: smooth;
+    }
+    .s4-wa-chat::-webkit-scrollbar { display: none; }
+    .s4-wa-date {
+      text-align: center; font-size: 10px;
+      color: rgba(255,255,255,0.35); margin: 4px 0 8px;
+      background: rgba(255,255,255,0.04); border-radius: 8px;
+      padding: 2px 10px; align-self: center;
+    }
+
+    /* Typing indicator */
+    .s4-typing {
+      display: flex; gap: 4px; align-items: center;
+      padding: 8px 12px;
+      background: #202C33; border-radius: 0 12px 12px 12px;
+      width: fit-content; opacity: 0;
+    }
+    .s4-typing span {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: rgba(255,255,255,0.4);
+      animation: s4-typing-dot 1.2s ease-in-out infinite;
+    }
+    .s4-typing span:nth-child(2) { animation-delay: 0.2s; }
+    .s4-typing span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes s4-typing-dot {
+      0%,60%,100% { transform: translateY(0); opacity: 0.4; }
+      30% { transform: translateY(-4px); opacity: 1; }
+    }
+
+    /* Messages */
+    .s4-msg { display: flex; flex-direction: column; align-items: flex-start; opacity: 0; }
+    .s4-bubble {
+      background: #202C33;
+      border-radius: 0 12px 12px 12px;
+      padding: 8px 12px 18px;
+      font-size: 12.5px; color: #E9EDEF; line-height: 1.45;
+      max-width: 220px; position: relative;
+    }
+    .s4-ts {
+      position: absolute; bottom: 4px; right: 8px;
+      font-size: 9.5px; color: rgba(255,255,255,0.35);
+      white-space: nowrap;
+    }
+    .s4-ticks { color: rgba(255,255,255,0.35); }
+    .s4-ticks.blue { color: #53BDEB; }
+
+    /* Rich card bubble */
+    .s4-rich-card {
+      background: #202C33;
+      border-radius: 0 12px 12px 12px;
+      overflow: hidden; max-width: 220px;
+      position: relative;
+    }
+    .s4-rich-img { width: 100%; height: 110px; object-fit: cover; display: block; }
+    .s4-rich-body { padding: 10px 12px 20px; }
+    .s4-rich-title { font-size: 12px; font-weight: 700; color: #E9EDEF; margin-bottom: 3px; }
+    .s4-rich-date { font-size: 11px; color: var(--accent); margin-bottom: 10px; }
+    .s4-rich-btns { display: flex; gap: 6px; }
+    .s4-btn-yes {
+      flex: 1; padding: 6px 0; border-radius: 6px; border: none; cursor: pointer;
+      background: rgba(125,211,216,0.18); border: 1px solid rgba(125,211,216,0.3);
+      color: var(--accent); font-size: 11px; font-weight: 600;
+      font-family: 'Inter Tight', sans-serif;
+    }
+    .s4-btn-alt {
+      flex: 1; padding: 6px 0; border-radius: 6px; border: none; cursor: pointer;
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+      color: rgba(255,255,255,0.55); font-size: 11px; font-weight: 500;
+      font-family: 'Inter Tight', sans-serif;
+    }
+    .s4-ts.card { bottom: 6px; right: 10px; }
+
+    /* ── Scene 5: Follow-up Timeline ── */
+    .s5-wrap { display:flex; flex-direction:column; align-items:center; gap:28px; width:100%; max-width:960px; }
+    .s5-header { text-align:center; opacity:0; }
+    .s5-badge { display:flex; align-items:center; justify-content:center; gap:7px; font-size:10px; font-weight:700; letter-spacing:.22em; color:var(--accent); text-transform:uppercase; margin-bottom:8px; }
+    .s5-dot { width:5px; height:5px; border-radius:50%; background:var(--accent); animation:s2-dot-beat 2s ease-in-out infinite; }
+    .s5-title { font-size:22px; font-weight:700; color:var(--white); letter-spacing:-.02em; }
+    .s5-sub { font-size:12px; color:rgba(255,255,255,.32); margin-top:4px; }
+    .s5-ac { color:var(--accent); }
+    .s5-tl { position:relative; width:100%; padding-bottom:4px; }
+    .s5-track { position:absolute; top:72px; left:7%; right:7%; height:2px; background:rgba(255,255,255,.07); border-radius:1px; overflow:hidden; z-index:0; }
+    .s5-track-fill { height:100%; width:0%; background:linear-gradient(to right,var(--accent),rgba(125,211,216,.5)); box-shadow:0 0 8px rgba(125,211,216,.4); border-radius:1px; }
+    .s5-nodes { display:flex; justify-content:space-between; position:relative; z-index:1; }
+    .s5-node { flex:1; display:flex; flex-direction:column; align-items:center; opacity:0; }
+    .s5-upper { height:72px; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; padding-bottom:10px; gap:3px; text-align:center; }
+    .s5-icon { font-size:18px; line-height:1; }
+    .s5-icon.hero { font-size:24px; }
+    .s5-nd-day { font-size:9px; font-weight:700; letter-spacing:.12em; color:rgba(255,255,255,.35); text-transform:uppercase; }
+    .s5-nd-day.hero { color:var(--accent); }
+    .s5-nd-title { font-size:11px; font-weight:700; color:var(--white); }
+    .s5-nd-title.hero { font-size:13px; color:var(--accent); letter-spacing:.05em; }
+    .s5-dot-wrap { position:relative; z-index:2; }
+    .s5-ndot { width:10px; height:10px; border-radius:50%; background:rgba(255,255,255,.15); border:2px solid rgba(255,255,255,.2); }
+    .s5-ndot.hero { width:18px; height:18px; background:var(--accent); border-color:var(--accent); box-shadow:0 0 12px rgba(125,211,216,.6),0 0 24px rgba(125,211,216,.3); }
+    .s5-lower { padding-top:10px; text-align:center; }
+    .s5-nd-sub { font-size:10px; color:rgba(255,255,255,.35); }
+    .s5-nd-sub.hero { color:rgba(255,255,255,.6); }
+    .s5-stat-row { display:flex; gap:16px; opacity:0; }
+    .s5-stat-box { padding:14px 24px; border-radius:12px; display:flex; align-items:center; gap:12px; border-color:rgba(125,211,216,.1); }
+    .s5-stat-num { font-size:24px; font-weight:800; color:var(--accent); letter-spacing:-.02em; }
+    .s5-stat-lbl { font-size:11px; color:rgba(255,255,255,.4); }
+
+    /* ── Scene 6: CRM Dashboard ── */
+    .s6-wrap { display:flex; flex-direction:column; gap:14px; width:100%; max-width:980px; }
+    .s6-top { display:flex; justify-content:space-between; align-items:center; opacity:0; }
+    .s6-crm-badge { font-size:14px; font-weight:800; letter-spacing:.08em; color:var(--white); }
+    .s6-agent { font-size:12px; color:rgba(255,255,255,.35); margin-top:3px; }
+    .s6-kpis { display:flex; gap:20px; }
+    .s6-kpi { text-align:right; }
+    .s6-kv { font-size:20px; font-weight:800; color:var(--white); letter-spacing:-.03em; font-variant-numeric:tabular-nums; }
+    .s6-kl { font-size:9px; color:rgba(255,255,255,.3); letter-spacing:.08em; text-transform:uppercase; margin-top:1px; }
+    .s6-main { display:flex; gap:14px; }
+    .s6-kanban { display:flex; gap:10px; flex:1; }
+    .s6-col { flex:1; display:flex; flex-direction:column; gap:8px; opacity:0; }
+    .s6-col-hdr { font-size:10px; font-weight:700; letter-spacing:.16em; color:rgba(255,255,255,.3); text-transform:uppercase; padding:8px 12px; border-radius:8px; background:rgba(255,255,255,.03); display:flex; justify-content:space-between; align-items:center; }
+    .s6-col-hdr.active { color:var(--accent); background:rgba(125,211,216,.06); }
+    .s6-cnt { font-size:11px; font-weight:700; padding:2px 7px; border-radius:20px; background:rgba(255,255,255,.08); color:rgba(255,255,255,.5); }
+    .s6-cnt.active { background:rgba(125,211,216,.15); color:var(--accent); }
+    .s6-col-active { border-radius:12px; border:1px solid rgba(125,211,216,.12); background:rgba(125,211,216,.03); padding:8px; }
+    .s6-ghost { background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.06); border-radius:10px; padding:12px; display:flex; flex-direction:column; gap:7px; }
+    .s6-gh-l { height:8px; border-radius:4px; background:rgba(255,255,255,.07); }
+    .s6-gh-l.s { width:60%; }
+    .s6-lead-card { background:linear-gradient(145deg,rgba(28,28,28,.95) 0%,rgba(16,16,16,.98) 100%); border:1px solid rgba(125,211,216,.25); border-radius:10px; padding:12px; box-shadow:0 0 20px rgba(125,211,216,.08),inset 0 1px 0 rgba(125,211,216,.1); }
+    .s6-lc-row { display:flex; align-items:center; gap:9px; margin-bottom:8px; }
+    .s6-lc-av { width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg,rgba(125,211,216,.9) 0%,rgba(60,155,160,.95) 100%); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; color:#0B0B0B; flex-shrink:0; }
+    .s6-lc-name { font-size:13px; font-weight:700; color:var(--white); }
+    .s6-lc-prop { font-size:10px; color:rgba(255,255,255,.4); margin-top:2px; }
+    .s6-lc-score { margin-left:auto; font-size:18px; font-weight:800; color:var(--accent); }
+    .s6-lc-foot { display:flex; justify-content:space-between; align-items:center; }
+    .s6-lc-date { font-size:10px; color:rgba(255,255,255,.4); }
+    .s6-ai-tag { font-size:9px; font-weight:700; letter-spacing:.1em; color:var(--accent); background:rgba(125,211,216,.12); border:1px solid rgba(125,211,216,.25); border-radius:20px; padding:2px 8px; }
+    .s6-feed { width:180px; flex-shrink:0; display:flex; flex-direction:column; gap:0; opacity:0; }
+    .s6-feed-title { font-size:10px; font-weight:700; letter-spacing:.18em; color:rgba(255,255,255,.3); text-transform:uppercase; margin-bottom:10px; }
+    .s6-feed-item { display:flex; align-items:flex-start; gap:9px; padding:9px 0; border-bottom:1px solid rgba(255,255,255,.05); opacity:0; }
+    .s6-feed-item:last-child { border-bottom:none; }
+    .s6-feed-dot { width:6px; height:6px; border-radius:50%; background:var(--accent); margin-top:4px; flex-shrink:0; }
+    .s6-feed-main { font-size:11px; font-weight:500; color:rgba(255,255,255,.8); }
+    .s6-feed-sub { font-size:10px; color:rgba(255,255,255,.3); margin-top:1px; }
+
+    /* ── Scene 7: Review Request ── */
+    .s7-wrap { display:flex; flex-direction:column; align-items:center; gap:20px; width:100%; max-width:940px; }
+    .s7-header { text-align:center; opacity:0; }
+    .s7-badge { display:flex; align-items:center; justify-content:center; gap:7px; font-size:10px; font-weight:700; letter-spacing:.22em; color:var(--accent); text-transform:uppercase; margin-bottom:6px; }
+    .s7-dot { width:5px; height:5px; border-radius:50%; background:var(--accent); animation:s2-dot-beat 2s ease-in-out infinite; }
+    .s7-sub { font-size:13px; color:rgba(255,255,255,.4); font-style:italic; }
+    .s7-main { display:flex; gap:20px; width:100%; align-items:flex-start; }
+    .s7-left { flex:1; display:flex; flex-direction:column; gap:14px; }
+    .s7-trigger { padding:18px 20px; border-radius:14px; opacity:0; border-color:rgba(125,211,216,.12); }
+    .s7-trig-badge { display:flex; align-items:center; gap:7px; font-size:9px; font-weight:700; letter-spacing:.2em; color:var(--accent); text-transform:uppercase; margin-bottom:10px; }
+    .s7-trig-dot { width:5px; height:5px; border-radius:50%; background:var(--accent); animation:s2-dot-beat 2s ease-in-out infinite; }
+    .s7-trig-event { font-size:15px; font-weight:700; color:var(--white); margin-bottom:6px; }
+    .s7-check { color:var(--accent); }
+    .s7-trig-lead { font-size:12px; color:rgba(255,255,255,.4); }
+    .s7-ac { color:var(--accent); }
+    .s7-arrow { display:flex; align-items:center; gap:10px; opacity:0; padding:0 8px; }
+    .s7-arrow-line { flex:1; height:1px; background:linear-gradient(to right,rgba(125,211,216,.3),rgba(125,211,216,.1)); }
+    .s7-arrow-lbl { font-size:10px; color:rgba(255,255,255,.3); white-space:nowrap; }
+    .s7-phone { border-radius:14px; overflow:hidden; opacity:0; border-color:rgba(255,255,255,.08); }
+    .s7-wa-hdr { display:flex; align-items:center; gap:9px; padding:10px 14px; background:#1F2C34; }
+    .s7-wa-av { width:28px; height:28px; border-radius:50%; background:rgba(125,211,216,.15); display:flex; align-items:center; justify-content:center; overflow:hidden; }
+    .s7-wa-av img { width:16px; height:16px; object-fit:contain; }
+    .s7-wa-name { font-size:12px; font-weight:600; color:#E9EDEF; }
+    .s7-verified { color:#53BDEB; font-size:10px; }
+    .s7-bubble-wrap { background:#0B141A; padding:10px; display:flex; flex-direction:column; gap:8px; }
+    .s7-bubble { background:#202C33; border-radius:0 12px 12px 12px; padding:10px 12px 20px; font-size:12px; color:#E9EDEF; line-height:1.5; position:relative; }
+    .s7-ts { position:absolute; bottom:4px; right:8px; font-size:9px; color:rgba(255,255,255,.35); }
+    .s7-review-btn { background:rgba(125,211,216,.15); border:1px solid rgba(125,211,216,.3); border-radius:8px; color:var(--accent); font-size:12px; font-weight:600; font-family:'Inter Tight',sans-serif; padding:8px 14px; cursor:pointer; align-self:flex-start; }
+    .s7-right { flex:1; padding:24px; opacity:0; border-color:rgba(255,255,255,.07); display:flex; flex-direction:column; gap:14px; }
+    .s7-g-hdr { display:flex; align-items:center; gap:12px; }
+    .s7-g-logo { width:36px; height:36px; border-radius:8px; background:var(--white); display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:800; color:#4285F4; flex-shrink:0; }
+    .s7-g-brand { font-size:14px; font-weight:700; color:var(--white); }
+    .s7-g-verified { font-size:10px; color:rgba(255,255,255,.4); }
+    .s7-g-user { font-size:12px; color:rgba(255,255,255,.5); }
+    .s7-stars { display:flex; gap:4px; }
+    .s7-star { font-size:24px; color:rgba(255,255,255,.1); transition:color .15s,text-shadow .15s; }
+    .s7-star.lit { color:#FFD700; text-shadow:0 0 12px rgba(255,215,0,.5); }
+    .s7-review { font-size:13px; color:rgba(255,255,255,.75); line-height:1.6; font-style:italic; min-height:60px; }
+    .s7-g-stats { font-size:11px; color:rgba(255,255,255,.35); }
+    .s7-assisted { font-size:9px; font-weight:700; letter-spacing:.12em; color:rgba(125,211,216,.5); text-transform:uppercase; padding:4px 10px; background:rgba(125,211,216,.06); border-radius:6px; align-self:flex-start; }
+
+    /* ── Scene 8: Finale ── */
+    .s8-wrap { display:flex; flex-direction:column; align-items:center; gap:16px; width:100%; max-width:880px; text-align:center; }
+    .s8-logo-zone { opacity:0; }
+    .s8-logo-img { width:56px; height:56px; object-fit:contain; filter:drop-shadow(0 0 20px rgba(125,211,216,.35)); }
+    .s8-headline { opacity:0; }
+    .s8-h1 { font-size:13px; font-weight:700; letter-spacing:.22em; color:rgba(255,255,255,.4); text-transform:uppercase; margin-bottom:6px; }
+    .s8-h2 { font-size:40px; font-weight:800; letter-spacing:-.03em; color:var(--white); line-height:1; margin-bottom:8px; }
+    .s8-h3 { font-size:13px; color:rgba(255,255,255,.4); }
+    .s8-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; width:100%; opacity:0; }
+    .s8-achiev { padding:20px 16px; border-radius:14px; display:flex; flex-direction:column; align-items:center; gap:8px; border-color:rgba(255,255,255,.07); box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 12px 24px rgba(0,0,0,.4); }
+    .s8-av-wrap { display:flex; align-items:baseline; gap:3px; }
+    .s8-av { font-size:36px; font-weight:800; letter-spacing:-.04em; color:var(--white); line-height:1; font-variant-numeric:tabular-nums; }
+    .s8-au { font-size:14px; font-weight:500; color:rgba(255,255,255,.35); }
+    .s8-date,.s8-stars { font-size:30px; font-weight:800; color:var(--accent); }
+    .s8-stars { color:#FFD700; text-shadow:0 0 12px rgba(255,215,0,.4); }
+    .s8-al { font-size:11px; color:rgba(255,255,255,.4); letter-spacing:.02em; }
+    .s8-tagline { font-size:18px; font-weight:700; color:rgba(255,255,255,.8); letter-spacing:-.01em; opacity:0; }
+    .s8-cta { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; opacity:0; }
+    .s8-btn-primary { display:inline-flex; align-items:center; padding:14px 28px; border-radius:12px; background:var(--accent); color:var(--bg); font-family:'Inter Tight',sans-serif; font-size:15px; font-weight:700; text-decoration:none; box-shadow:0 0 24px rgba(125,211,216,.25); }
+    .s8-btn-secondary { display:inline-flex; align-items:center; padding:14px 28px; border-radius:12px; background:transparent; border:1px solid rgba(125,211,216,.35); color:var(--accent); font-family:'Inter Tight',sans-serif; font-size:15px; font-weight:600; text-decoration:none; }
+    .s8-footer { font-size:11px; color:rgba(255,255,255,.2); letter-spacing:.08em; opacity:0; }
+
+    /* ── Polish: Hover lifts ── */
+    .s4-slot, .s8-achiev, .s5-stat-box, .s6-lead-card {
+      transition: transform 200ms ease, box-shadow 200ms ease;
+    }
+    .s4-slot:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,.5); }
+    .s4-slot-sel:hover { box-shadow: 0 0 20px rgba(125,211,216,.2), 0 8px 20px rgba(0,0,0,.5); }
+    .s6-lead-card:hover { transform: translateY(-2px); box-shadow: 0 0 28px rgba(125,211,216,.15), 0 8px 24px rgba(0,0,0,.5); }
+    .s8-achiev:hover { transform: translateY(-2px); box-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 16px 32px rgba(0,0,0,.55); }
+    .s5-stat-box:hover { transform: translateY(-2px); }
+    .s8-btn-primary, .s8-btn-secondary { transition: transform 200ms ease, box-shadow 200ms ease; }
+    .s8-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(125,211,216,.35); }
+    .s8-btn-secondary:hover { transform: translateY(-2px); }
+    .s7-review-btn { transition: transform 200ms ease, background 200ms ease; }
+    .s7-review-btn:hover { transform: translateY(-1px); background: rgba(125,211,216,.28) !important; }
+    .s4-btn-yes { transition: transform 200ms ease, background 200ms ease; }
+    .s4-btn-yes:hover { transform: translateY(-1px); background: rgba(125,211,216,.28) !important; }
+    .dot { transition: all .3s; }
+    .dot:hover { transform: scaleX(1.4); }
+
+    /* ── Loader ── */
+    #loader {
+      position: fixed; inset: 0; z-index: 9999;
+      background: var(--bg);
+      display: flex; align-items: center; justify-content: center;
+      transition: opacity 0.6s cubic-bezier(0.4,0,0.2,1);
+    }
+    .loader-inner { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+    .loader-logo { width: 72px; height: 72px; object-fit: contain; animation: loader-pulse 1.4s ease-in-out infinite; }
+    .loader-word { font-size: 18px; font-weight: 700; letter-spacing: .18em; color: var(--white); }
+    .loader-tagline { font-size: 9px; font-weight: 600; letter-spacing: .3em; color: var(--accent); text-transform: uppercase; }
+    @keyframes loader-pulse {
+      0%,100% { filter: drop-shadow(0 0 14px rgba(125,211,216,.35)); }
+      50%      { filter: drop-shadow(0 0 32px rgba(125,211,216,.8)) drop-shadow(0 0 60px rgba(125,211,216,.2)); }
+    }
+
+    /* ── Mobile overlay ── */
+    #mob-overlay {
+      display: none; position: fixed; inset: 0; z-index: 10000;
+      background: var(--bg); flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 20px; text-align: center; padding: 40px;
+    }
+    @media (max-width: 1023px) { #mob-overlay { display: flex; } }
+    .mob-logo { width: 52px; height: 52px; object-fit: contain; filter: drop-shadow(0 0 16px rgba(125,211,216,.4)); margin-bottom: 4px; }
+    .mob-title { font-size: 16px; font-weight: 700; letter-spacing: .16em; color: var(--white); }
+    .mob-msg { font-size: 15px; color: rgba(255,255,255,.45); line-height: 1.75; max-width: 300px; }
+  </style>
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div id="loader">
+  <div class="loader-inner">
+    <img src="references/vinano-logo.png" class="loader-logo" alt="Vinano" />
+    <div class="loader-word">VINANO</div>
+    <div class="loader-tagline">Real Estate AI</div>
+  </div>
+</div>
+
+<!-- Mobile notice -->
+<div id="mob-overlay">
+  <img src="references/vinano-logo.png" class="mob-logo" alt="Vinano" />
+  <div class="mob-title">VINANO</div>
+  <div class="mob-msg">Diese Demo ist für Desktop-Bildschirme optimiert.<br>Für beste Erfahrung bitte am Computer öffnen.</div>
+</div>
+
+<!-- Particle canvas -->
+<canvas id="particles"></canvas>
+
+<!-- Progress bar -->
+<div class="progress-bar" id="progressBar"></div>
+
+<!-- Header -->
+<header class="hdr">
+  <!-- Logo -->
+  <div class="logo">
+    <div class="logo-icon">
+      <img src="references/vinano-logo.png" alt="Vinano" style="width:100%;height:100%;object-fit:contain;" />
+    </div>
+    <div class="logo-text">
+      <span class="logo-name">VINANO</span>
+      <span class="logo-sub">REAL ESTATE AI</span>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <div class="scene-counter" id="sceneCounter"># SZENE 01 / 08</div>
+    <div class="ctrl-row">
+      <button class="ctrl-btn" id="btnPrev" title="Zurück (←)" aria-label="Vorherige Szene">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </button>
+      <button class="ctrl-btn play" id="btnPlay" title="Pause/Play (Leertaste)" aria-label="Pause/Play">
+        <svg id="iconPlay" viewBox="0 0 24 24" fill="currentColor" style="margin-left:2px">
+          <polygon points="5,3 19,12 5,21"/>
+        </svg>
+        <svg id="iconPause" viewBox="0 0 24 24" fill="currentColor" style="display:none">
+          <rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>
+        </svg>
+      </button>
+      <button class="ctrl-btn" id="btnNext" title="Weiter (→)" aria-label="Nächste Szene">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+      </button>
+    </div>
+    <div class="dots" id="dots"></div>
+  </div>
+</header>
+
+<!-- Scenes -->
+<div class="scenes" id="scenes">
+
+  <!-- SZENE 1 -->
+  <div class="scene active" data-scene="0">
+    <div class="s1-bg" style="background-image:url('references/property-foto-3.jpg')"></div>
+    <div class="s1-wrap">
+
+      <!-- Listing Card -->
+      <div class="s1-listing glass">
+        <div class="s1-location">
+          <span class="s1-live-dot"></span>
+          WESTEND, FRANKFURT AM MAIN
+        </div>
+        <h1 class="s1-title">
+          Premium Penthouse<br>
+          <span class="s1-title-muted">Frankfurt Westend</span>
+        </h1>
+        <div class="s1-price">€&thinsp;2.450.000</div>
+        <div class="s1-specs">
+          <span class="s1-spec">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><polygon points="5,0 10,5 5,10 0,5" stroke="currentColor" stroke-width="1.3"/></svg>
+            4 Zimmer
+          </span>
+          <span class="s1-spec">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><polygon points="5,0 10,5 5,10 0,5" stroke="currentColor" stroke-width="1.3"/></svg>
+            185 m²
+          </span>
+          <span class="s1-spec">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><polygon points="5,0 10,5 5,10 0,5" stroke="currentColor" stroke-width="1.3"/></svg>
+            Balkon · Skyline-Blick
+          </span>
+        </div>
+        <div class="s1-grid">
+          <img src="references/property-foto-3.jpg" alt="" />
+          <img src="references/property-foto-1.jpg" alt="" />
+          <img src="references/property-foto-2.jpg" alt="" />
+        </div>
+      </div>
+
+      <!-- Form Card -->
+      <div class="s1-form-card glass">
+        <h2 class="s1-form-title">Exposé anfordern</h2>
+        <p class="s1-form-sub">Kostenlos &amp; unverbindlich</p>
+
+        <div class="s1-field">
+          <label>NAME</label>
+          <input id="s1-name" class="s1-input" type="text" readonly />
+        </div>
+        <div class="s1-field">
+          <label>E-MAIL</label>
+          <input id="s1-email" class="s1-input" type="email" readonly />
+        </div>
+        <div class="s1-field">
+          <label>TELEFON</label>
+          <input id="s1-tel" class="s1-input" type="tel" readonly />
+        </div>
+
+        <button id="s1-btn" class="s1-btn-idle">Absenden</button>
+        <p id="s1-note" class="s1-ai-note" style="opacity:0">VINANO AI kontaktiert Sie in Kürze</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SZENE 2 -->
+  <div class="scene" data-scene="1">
+    <audio id="s2-audio" preload="auto">
+      <source src="https://raw.githubusercontent.com/christianschroeder2210-star/vinanoimmobiliendemo/main/ElevenLabs_2026-04-28T17_57_39_Rick%20-%20Warm%20and%20Natural_pvc_sp114_s65_sb83_se73_b_m2.mp3" type="audio/mpeg" />
+    </audio>
+    <div class="s2-atmo"></div>
+    <div class="s2-wrap">
+
+      <!-- Identity: logo + status floating, no card -->
+      <div class="s2-identity">
+        <div class="s2-logo-zone">
+          <div class="s2-logo-halo"></div>
+          <div class="s2-ring s2-r1"></div>
+          <div class="s2-ring s2-r2"></div>
+          <div class="s2-ring s2-r3"></div>
+          <img src="references/vinano-logo.png" class="s2-logo-img" alt="Vinano" />
+        </div>
+        <div class="s2-status-row">
+          <span class="s2-dot"></span>
+          <span class="s2-status-lbl">VINANO AI &nbsp;·&nbsp; ANRUF LÄUFT</span>
+        </div>
+        <div class="s2-meta">
+          <span class="s2-phone">+49 171 &bull;&bull;&bull; &bull;&bull;78</span>
+          <span class="s2-msep">·</span>
+          <span id="s2-timer">0:00</span>
+        </div>
+      </div>
+
+      <!-- Full-width waveform -->
+      <div class="s2-wave-wrap">
+        <canvas id="s2-wave"></canvas>
+      </div>
+
+      <!-- Subtitle panel -->
+      <div class="s2-sub-panel glass">
+        <div id="s2-sub-text" class="s2-sub-text"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SZENE 3 -->
+  <div class="scene" data-scene="2">
+    <div class="s3-wrap">
+
+      <!-- Status header -->
+      <div class="s3-hdr" id="s3-hdr">
+        <div class="s3-hdr-badge">
+          <span class="s3-hdr-dot"></span>
+          LEAD QUALIFIZIERT
+        </div>
+        <span class="s3-hdr-time">vor 23 Sekunden · Automatisch durch Vinano AI</span>
+      </div>
+
+      <!-- 3-column main grid -->
+      <div class="s3-main">
+
+        <!-- COL A: Lead Profile + Buyer Profile -->
+        <div class="s3-col">
+          <div class="s3-card s3-profile-card" id="s3-profile-card">
+            <div class="s3-avatar-row">
+              <div class="s3-avatar">MH</div>
+              <div>
+                <div class="s3-lead-name">Markus Hoffmann</div>
+                <div class="s3-qual-badge"><span class="s3-qual-dot"></span>QUALIFIZIERT</div>
+              </div>
+            </div>
+            <div class="s3-divider"></div>
+            <div class="s3-detail-row s3-profile-row">
+              <span class="s3-dl">Quelle</span><span class="s3-dv">Webformular · Westend</span>
+            </div>
+            <div class="s3-detail-row s3-profile-row">
+              <span class="s3-dl">Kontakt</span><span class="s3-dv">m.hoffmann@email.de</span>
+            </div>
+            <div class="s3-detail-row s3-profile-row">
+              <span class="s3-dl">Erfasst</span><span class="s3-dv">vor 23 Sekunden</span>
+            </div>
+          </div>
+
+          <div class="s3-card s3-buyer-card" id="s3-buyer-card">
+            <div class="s3-card-title">Käufer-Profil</div>
+            <div class="s3-detail-row s3-profile-row">
+              <span class="s3-dl">Suchprofil</span><span class="s3-dv">Eigenheim</span>
+            </div>
+            <div class="s3-detail-row s3-profile-row">
+              <span class="s3-dl">Budget</span><span class="s3-dv">2,0 – 2,6 Mio €</span>
+            </div>
+            <div class="s3-detail-row s3-profile-row">
+              <span class="s3-dl">Zeitfenster</span><span class="s3-dv">3 – 6 Monate</span>
+            </div>
+            <div class="s3-detail-row s3-profile-row">
+              <span class="s3-dl">Bevorzugte Lage</span><span class="s3-dv">Westend · Sachsenhausen</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- COL B: Score -->
+        <div class="s3-col">
+          <div class="s3-card s3-score-card" id="s3-score-card">
+            <div class="s3-score-title">QUALIFICATION SCORE</div>
+            <div class="s3-ring-wrap">
+              <svg viewBox="0 0 130 130" class="s3-ring-svg">
+                <defs>
+                  <linearGradient id="s3grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#7DD3D8"/>
+                    <stop offset="100%" stop-color="#5ec4c9"/>
+                  </linearGradient>
+                </defs>
+                <circle cx="65" cy="65" r="54" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="7"/>
+                <circle cx="65" cy="65" r="54" fill="none" stroke="url(#s3grad)" stroke-width="7"
+                  stroke-linecap="round" stroke-dasharray="339" stroke-dashoffset="339"
+                  transform="rotate(-90 65 65)" id="s3-arc"/>
+              </svg>
+              <div class="s3-ring-center">
+                <span class="s3-score-num" id="s3-score-num">0</span>
+                <span class="s3-score-max">/100</span>
+              </div>
+            </div>
+            <div class="s3-score-desc">Hohe Abschlusswahrscheinlichkeit</div>
+            <div class="s3-score-tier"><span class="s3-tier-dot"></span>A-Lead · Priorität Hoch</div>
+          </div>
+        </div>
+
+        <!-- COL C: Criteria Bars + Actions -->
+        <div class="s3-col">
+          <div class="s3-card s3-bars-card" id="s3-bars-card">
+            <div class="s3-card-title">Qualifizierungs-Kriterien</div>
+            <div class="s3-bar-list">
+              <div class="s3-bar-item">
+                <div class="s3-bar-meta"><span>Budget-Match</span><span class="s3-bar-pct" id="s3-pct-1">0%</span></div>
+                <div class="s3-bar-track"><div class="s3-bar-fill" id="s3-bar-1"></div></div>
+              </div>
+              <div class="s3-bar-item">
+                <div class="s3-bar-meta"><span>Standort-Präferenz</span><span class="s3-bar-pct" id="s3-pct-2">0%</span></div>
+                <div class="s3-bar-track"><div class="s3-bar-fill" id="s3-bar-2"></div></div>
+              </div>
+              <div class="s3-bar-item">
+                <div class="s3-bar-meta"><span>Zeitfenster</span><span class="s3-bar-pct" id="s3-pct-3">0%</span></div>
+                <div class="s3-bar-track"><div class="s3-bar-fill" id="s3-bar-3"></div></div>
+              </div>
+              <div class="s3-bar-item">
+                <div class="s3-bar-meta"><span>Finanzierung</span><span class="s3-bar-pct" id="s3-pct-4">0%</span></div>
+                <div class="s3-bar-track"><div class="s3-bar-fill" id="s3-bar-4"></div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="s3-card s3-actions-card" id="s3-actions-card">
+            <div class="s3-card-title">KI-Aktionen</div>
+            <div class="s3-action-item" id="s3-act-1">
+              <div class="s3-act-check done">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div class="s3-act-body">
+                <div class="s3-act-title">E-Mail an Makler gesendet</div>
+                <div class="s3-act-sub">m.hoffmann@email.de · sofort</div>
+              </div>
+            </div>
+            <div class="s3-action-item" id="s3-act-2">
+              <div class="s3-act-check done">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div class="s3-act-body">
+                <div class="s3-act-title">CRM-Eintrag erstellt</div>
+                <div class="s3-act-sub">Kategorie: A-Lead · Vinano CRM</div>
+              </div>
+            </div>
+            <div class="s3-action-item" id="s3-act-3">
+              <div class="s3-act-check pending">
+                <span class="s3-act-loader"></span>
+              </div>
+              <div class="s3-act-body">
+                <div class="s3-act-title">Termin-Vorschlag</div>
+                <div class="s3-act-sub">Wird automatisch vorbereitet…</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- SZENE 4 -->
+  <div class="scene" data-scene="3">
+    <div class="s4-wrap">
+
+      <!-- LEFT: Vinano System View -->
+      <div class="s4-left">
+
+        <div class="s4-sys-hdr">
+          <div class="s4-sys-badge"><span class="s4-sys-dot"></span>VINANO SYSTEM</div>
+          <div class="s4-sys-title">Automatische Terminvermittlung</div>
+          <div class="s4-sys-sub">Lead: <span class="s4-ac">Markus Hoffmann</span> &nbsp;·&nbsp; Status: <span class="s4-ac">aktiv</span></div>
+        </div>
+
+        <!-- Match indicators -->
+        <div class="s4-checks">
+          <div class="s4-check-item" id="s4-chk1">
+            <div class="s4-chk-circle"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <span>Lead-Verfügbarkeit geprüft</span>
+          </div>
+          <div class="s4-check-item" id="s4-chk2">
+            <div class="s4-chk-circle"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <span>Makler-Kalender synchronisiert</span>
+          </div>
+          <div class="s4-check-item" id="s4-chk3">
+            <div class="s4-chk-circle"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <span>Optimaler Termin identifiziert</span>
+          </div>
+        </div>
+
+        <!-- Time slots 2×2 grid -->
+        <div class="s4-slots">
+          <div class="s4-slot" id="s4-sl1">
+            <div class="s4-sl-day">Mo</div>
+            <div class="s4-sl-date">5. Mai</div>
+            <div class="s4-sl-time">10:00</div>
+            <div class="s4-sl-badge">Verfügbar</div>
+          </div>
+          <div class="s4-slot" id="s4-sl2">
+            <div class="s4-sl-day">Di</div>
+            <div class="s4-sl-date">6. Mai</div>
+            <div class="s4-sl-time">14:30</div>
+            <div class="s4-sl-badge">Verfügbar</div>
+          </div>
+          <div class="s4-slot s4-slot-sel" id="s4-sl3">
+            <div class="s4-sl-day">Mi</div>
+            <div class="s4-sl-date">7. Mai</div>
+            <div class="s4-sl-time">15:00</div>
+            <div class="s4-sl-badge s4-sl-opt">★ Optimal</div>
+          </div>
+          <div class="s4-slot" id="s4-sl4">
+            <div class="s4-sl-day">Do</div>
+            <div class="s4-sl-date">8. Mai</div>
+            <div class="s4-sl-time">11:00</div>
+            <div class="s4-sl-badge">Verfügbar</div>
+          </div>
+        </div>
+
+        <!-- Selected appointment card -->
+        <div class="s4-appt glass" id="s4-appt">
+          <div class="s4-appt-lbl"><span class="s4-appt-dot"></span>VORSCHLAG GESENDET</div>
+          <div class="s4-appt-date">Mittwoch, 7. Mai 2025</div>
+          <div class="s4-appt-time">15:00 – 16:00 Uhr</div>
+          <div class="s4-appt-details">
+            <span>Premium Penthouse · Westend</span>
+            <span class="s4-appt-sep">·</span>
+            <span>Sven Müller (Makler)</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT: Phone mockup -->
+      <div class="s4-right" id="s4-phone-wrap">
+        <div class="s4-phone">
+
+          <!-- WhatsApp header -->
+          <div class="s4-wa-hdr">
+            <div class="s4-wa-back">‹</div>
+            <div class="s4-wa-avatar">
+              <img src="references/vinano-logo.png" alt="" />
+            </div>
+            <div class="s4-wa-info">
+              <div class="s4-wa-name">Vinano Maklerservice <span class="s4-wa-verified">✓</span></div>
+              <div class="s4-wa-online" id="s4-wa-status">Online</div>
+            </div>
+            <div class="s4-wa-more">⋮</div>
+          </div>
+
+          <!-- Chat area -->
+          <div class="s4-wa-chat" id="s4-wa-chat">
+            <div class="s4-wa-date">Heute</div>
+
+            <!-- Typing indicator (shared, toggled by GSAP) -->
+            <div class="s4-typing" id="s4-typing">
+              <span></span><span></span><span></span>
+            </div>
+
+            <!-- Message 1 -->
+            <div class="s4-msg" id="s4-msg1">
+              <div class="s4-bubble">Hallo Markus 👋 Schön, dass Sie sich für das Penthouse im Westend interessieren!<span class="s4-ts">15:03 <span class="s4-ticks">✓✓</span></span></div>
+            </div>
+
+            <!-- Message 2 -->
+            <div class="s4-msg" id="s4-msg2">
+              <div class="s4-bubble">Ich habe für Sie einen passenden Besichtigungstermin gefunden:<span class="s4-ts">15:03 <span class="s4-ticks">✓✓</span></span></div>
+            </div>
+
+            <!-- Appointment rich card -->
+            <div class="s4-msg" id="s4-msg3">
+              <div class="s4-rich-card">
+                <img class="s4-rich-img" src="references/property-foto-3.jpg" alt="" />
+                <div class="s4-rich-body">
+                  <div class="s4-rich-title">Premium Penthouse · Westend</div>
+                  <div class="s4-rich-date">Mi. 7. Mai &nbsp;·&nbsp; 15:00 Uhr</div>
+                  <div class="s4-rich-btns">
+                    <button class="s4-btn-yes">✓ Annehmen</button>
+                    <button class="s4-btn-alt">Anderen Termin</button>
+                  </div>
+                </div>
+                <span class="s4-ts card">15:04 <span class="s4-ticks blue">✓✓</span></span>
+              </div>
+            </div>
+
+            <!-- Message 4 -->
+            <div class="s4-msg" id="s4-msg4">
+              <div class="s4-bubble">Bei Rückfragen stehe ich jederzeit gerne zur Verfügung. 🤝<span class="s4-ts">15:04 <span class="s4-ticks">✓✓</span></span></div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SZENE 5 -->
+  <div class="scene" data-scene="4">
+    <div class="s5-wrap">
+      <div class="s5-header" id="s5-header">
+        <div class="s5-badge"><span class="s5-dot"></span>AUTOMATISIERTE NACHFASS-SEQUENZ</div>
+        <div class="s5-title">7 Tage rund um den Besichtigungstermin</div>
+        <div class="s5-sub">Lead: <span class="s5-ac">Markus Hoffmann</span> &nbsp;·&nbsp; Mi. 7. Mai · 15:00 Uhr</div>
+      </div>
+
+      <div class="s5-tl">
+        <div class="s5-track"><div class="s5-track-fill" id="s5-line"></div></div>
+        <div class="s5-nodes">
+          <div class="s5-node" id="s5-n1">
+            <div class="s5-upper"><div class="s5-icon">💬</div><div class="s5-nd-day">T–2 Tage</div><div class="s5-nd-title">Erinnerung</div></div>
+            <div class="s5-dot-wrap"><div class="s5-ndot"></div></div>
+            <div class="s5-lower"><div class="s5-nd-sub">WhatsApp gesendet</div></div>
+          </div>
+          <div class="s5-node" id="s5-n2">
+            <div class="s5-upper"><div class="s5-icon">📍</div><div class="s5-nd-day">T–1 Tag</div><div class="s5-nd-title">Anfahrt</div></div>
+            <div class="s5-dot-wrap"><div class="s5-ndot"></div></div>
+            <div class="s5-lower"><div class="s5-nd-sub">Adresse + Parking</div></div>
+          </div>
+          <div class="s5-node s5-node-hero" id="s5-n3">
+            <div class="s5-upper"><div class="s5-icon hero">🏠</div><div class="s5-nd-day hero">HEUTE</div><div class="s5-nd-title hero">BESICHTIGUNG</div></div>
+            <div class="s5-dot-wrap"><div class="s5-ndot hero" id="s5-hero-dot"></div></div>
+            <div class="s5-lower"><div class="s5-nd-sub hero">15:00 · Westend</div></div>
+          </div>
+          <div class="s5-node" id="s5-n4">
+            <div class="s5-upper"><div class="s5-icon">⭐</div><div class="s5-nd-day">T+1 Std.</div><div class="s5-nd-title">Feedback</div></div>
+            <div class="s5-dot-wrap"><div class="s5-ndot"></div></div>
+            <div class="s5-lower"><div class="s5-nd-sub">Eindruck abgefragt</div></div>
+          </div>
+          <div class="s5-node" id="s5-n5">
+            <div class="s5-upper"><div class="s5-icon">📄</div><div class="s5-nd-day">T+1 Tag</div><div class="s5-nd-title">Unterlagen</div></div>
+            <div class="s5-dot-wrap"><div class="s5-ndot"></div></div>
+            <div class="s5-lower"><div class="s5-nd-sub">Grundriss · Energie</div></div>
+          </div>
+          <div class="s5-node" id="s5-n6">
+            <div class="s5-upper"><div class="s5-icon">📞</div><div class="s5-nd-day">T+3 Tage</div><div class="s5-nd-title">Nachfass</div></div>
+            <div class="s5-dot-wrap"><div class="s5-ndot"></div></div>
+            <div class="s5-lower"><div class="s5-nd-sub">Makler meldet sich</div></div>
+          </div>
+          <div class="s5-node" id="s5-n7">
+            <div class="s5-upper"><div class="s5-icon">🏘</div><div class="s5-nd-day">T+7 Tage</div><div class="s5-nd-title">Alternativen</div></div>
+            <div class="s5-dot-wrap"><div class="s5-ndot"></div></div>
+            <div class="s5-lower"><div class="s5-nd-sub">Ähnliche Objekte</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="s5-stat-row" id="s5-stat">
+        <div class="s5-stat-box glass">
+          <span class="s5-stat-num">247</span>
+          <span class="s5-stat-lbl">Leads laufen gerade durch diese Sequenz</span>
+        </div>
+        <div class="s5-stat-box glass">
+          <span class="s5-stat-num">100%</span>
+          <span class="s5-stat-lbl">Vollautomatisch · kein manueller Aufwand</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SZENE 6 -->
+  <div class="scene" data-scene="5">
+    <div class="s6-wrap">
+      <div class="s6-top" id="s6-top">
+        <div class="s6-title-block">
+          <div class="s6-crm-badge">VINANO CRM</div>
+          <div class="s6-agent">Sven Müller &nbsp;·&nbsp; Müller Immobilien Frankfurt</div>
+        </div>
+        <div class="s6-kpis">
+          <div class="s6-kpi"><div class="s6-kv" id="s6-k1">0</div><div class="s6-kl">Aktive Leads</div></div>
+          <div class="s6-kpi"><div class="s6-kv" id="s6-k2">0</div><div class="s6-kl">Besichtigungen / Woche</div></div>
+          <div class="s6-kpi"><div class="s6-kv" id="s6-k3">0%</div><div class="s6-kl">Conversion Rate</div></div>
+          <div class="s6-kpi"><div class="s6-kv" id="s6-k4">0s</div><div class="s6-kl">Ø Response Time</div></div>
+        </div>
+      </div>
+      <div class="s6-main">
+        <div class="s6-kanban">
+          <div class="s6-col" id="s6-col1">
+            <div class="s6-col-hdr">NEUE LEADS <span class="s6-cnt">3</span></div>
+            <div class="s6-ghost"><div class="s6-gh-l"></div><div class="s6-gh-l s"></div></div>
+            <div class="s6-ghost"><div class="s6-gh-l"></div><div class="s6-gh-l s"></div></div>
+            <div class="s6-ghost"><div class="s6-gh-l"></div><div class="s6-gh-l s"></div></div>
+          </div>
+          <div class="s6-col s6-col-active" id="s6-col2">
+            <div class="s6-col-hdr active">IN BESICHTIGUNG <span class="s6-cnt active">5</span></div>
+            <div class="s6-lead-card" id="s6-markus">
+              <div class="s6-lc-row">
+                <div class="s6-lc-av">MH</div>
+                <div class="s6-lc-info">
+                  <div class="s6-lc-name">Markus Hoffmann</div>
+                  <div class="s6-lc-prop">Penthouse Westend · 2,45 Mio €</div>
+                </div>
+                <div class="s6-lc-score">87</div>
+              </div>
+              <div class="s6-lc-foot">
+                <span class="s6-lc-date">7.5. · 15:00</span>
+                <span class="s6-ai-tag">AI Qualified</span>
+              </div>
+            </div>
+            <div class="s6-ghost"><div class="s6-gh-l"></div><div class="s6-gh-l s"></div></div>
+            <div class="s6-ghost"><div class="s6-gh-l"></div><div class="s6-gh-l s"></div></div>
+            <div class="s6-ghost"><div class="s6-gh-l"></div><div class="s6-gh-l s"></div></div>
+            <div class="s6-ghost"><div class="s6-gh-l"></div><div class="s6-gh-l s"></div></div>
+          </div>
+          <div class="s6-col" id="s6-col3">
+            <div class="s6-col-hdr">VERHANDLUNG <span class="s6-cnt">2</span></div>
+            <div class="s6-ghost"><div class="s6-gh-l"></div><div class="s6-gh-l s"></div></div>
+            <div class="s6-ghost"><div class="s6-gh-l"></div><div class="s6-gh-l s"></div></div>
+          </div>
+        </div>
+        <div class="s6-feed" id="s6-feed">
+          <div class="s6-feed-title">Live-Aktivität</div>
+          <div class="s6-feed-item" id="s6-a1"><div class="s6-feed-dot"></div><div><div class="s6-feed-main">Termin bestätigt</div><div class="s6-feed-sub">Markus Hoffmann · gerade eben</div></div></div>
+          <div class="s6-feed-item" id="s6-a2"><div class="s6-feed-dot"></div><div><div class="s6-feed-main">Erinnerung versendet</div><div class="s6-feed-sub">3 Leads · vor 2 Min.</div></div></div>
+          <div class="s6-feed-item" id="s6-a3"><div class="s6-feed-dot"></div><div><div class="s6-feed-main">Neuer Lead qualifiziert</div><div class="s6-feed-sub">Score 92 · vor 5 Min.</div></div></div>
+          <div class="s6-feed-item" id="s6-a4"><div class="s6-feed-dot"></div><div><div class="s6-feed-main">Follow-up geplant</div><div class="s6-feed-sub">S. Becker · vor 8 Min.</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SZENE 7 -->
+  <div class="scene" data-scene="6">
+    <div class="s7-wrap">
+      <div class="s7-header" id="s7-header">
+        <div class="s7-badge"><span class="s7-dot"></span>AUTOMATISCHE BEWERTUNGS-ANFRAGE</div>
+        <div class="s7-sub">Im perfekten Moment. Mit den richtigen Worten.</div>
+      </div>
+      <div class="s7-main">
+        <div class="s7-left">
+          <div class="s7-trigger glass" id="s7-trigger">
+            <div class="s7-trig-badge"><span class="s7-trig-dot"></span>ERFOLGS-EVENT ERKANNT</div>
+            <div class="s7-trig-event">Notar-Termin <span class="s7-check">✓</span> stattgefunden</div>
+            <div class="s7-trig-lead">Markus Hoffmann &nbsp;·&nbsp; <span class="s7-ac">Käufer (gewonnen)</span></div>
+          </div>
+          <div class="s7-arrow" id="s7-arrow">
+            <div class="s7-arrow-line"></div>
+            <span class="s7-arrow-lbl">Anfrage automatisch geplant →</span>
+          </div>
+          <div class="s7-phone glass" id="s7-phone">
+            <div class="s7-wa-hdr">
+              <div class="s7-wa-av"><img src="references/vinano-logo.png" /></div>
+              <div class="s7-wa-name">Vinano Maklerservice <span class="s7-verified">✓</span></div>
+            </div>
+            <div class="s7-bubble-wrap">
+              <div class="s7-bubble" id="s7-bubble">Hi Markus, herzlichen Glückwunsch zu Ihrem neuen Zuhause! 🎉<br><br>Hätten Sie 30 Sekunden für eine Google-Bewertung? Es würde uns sehr helfen 🙏<span class="s7-ts">15:22 <span class="s4-ticks blue">✓✓</span></span></div>
+              <button class="s7-review-btn" id="s7-rbtn">⭐ Bewertung abgeben</button>
+            </div>
+          </div>
+        </div>
+        <div class="s7-right glass" id="s7-google">
+          <div class="s7-g-hdr">
+            <div class="s7-g-logo">G</div>
+            <div>
+              <div class="s7-g-brand">Google Reviews</div>
+              <div class="s7-g-verified">✓ Auf Google verifiziert</div>
+            </div>
+          </div>
+          <div class="s7-g-user">Markus H. &nbsp;·&nbsp; vor 2 Min.</div>
+          <div class="s7-stars">
+            <span class="s7-star" id="s7-s1">★</span><span class="s7-star" id="s7-s2">★</span><span class="s7-star" id="s7-s3">★</span><span class="s7-star" id="s7-s4">★</span><span class="s7-star" id="s7-s5">★</span>
+          </div>
+          <div class="s7-review" id="s7-review"></div>
+          <div class="s7-g-stats">Antwort-Quote: <span class="s7-ac">73%</span> &nbsp;·&nbsp; Ø Bewertung: <span class="s7-ac">4.9 / 5</span></div>
+          <div class="s7-assisted">VINANO ASSISTED &nbsp;·&nbsp; Vorgeschlagener Text · bestätigt</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SZENE 8 -->
+  <div class="scene" data-scene="7">
+    <div class="s8-wrap">
+      <div class="s8-logo-zone" id="s8-logo">
+        <img src="references/vinano-logo.png" class="s8-logo-img" />
+      </div>
+      <div class="s8-headline" id="s8-headline">
+        <div class="s8-h1">VON ANFRAGE BIS ABSCHLUSS</div>
+        <div class="s8-h2">VOLLAUTOMATISCH.</div>
+        <div class="s8-h3">Was Vinano für Markus Hoffmann in dieser Demo erledigt hat:</div>
+      </div>
+      <div class="s8-grid" id="s8-grid">
+        <div class="s8-achiev glass" id="s8-ac1"><div class="s8-av-wrap"><span class="s8-av" id="s8-v1">0</span><span class="s8-au">Sek.</span></div><div class="s8-al">Reaktionszeit zur Anfrage</div></div>
+        <div class="s8-achiev glass" id="s8-ac2"><div class="s8-av-wrap"><span class="s8-av" id="s8-v2">0</span><span class="s8-au">/100</span></div><div class="s8-al">Qualification Score</div></div>
+        <div class="s8-achiev glass" id="s8-ac3"><div class="s8-av-wrap"><span class="s8-av" id="s8-v3">0</span><span class="s8-au">Min.</span></div><div class="s8-al">Manuelle Maklerarbeit</div></div>
+        <div class="s8-achiev glass" id="s8-ac4"><div class="s8-av-wrap"><span class="s8-av s8-date">6.5.</span></div><div class="s8-al">Termin automatisch vereinbart</div></div>
+        <div class="s8-achiev glass" id="s8-ac5"><div class="s8-av-wrap"><span class="s8-av" id="s8-v5">0</span><span class="s8-au">Tage</span></div><div class="s8-al">Bis zur Verkaufs-Empfehlung</div></div>
+        <div class="s8-achiev glass" id="s8-ac6"><div class="s8-av-wrap"><span class="s8-av s8-stars">5 ★</span></div><div class="s8-al">Google-Bewertung erhalten</div></div>
+      </div>
+      <div class="s8-tagline" id="s8-tagline">Nie wieder Anfragen an die Konkurrenz verlieren.</div>
+      <div class="s8-cta" id="s8-cta">
+        <a href="https://vinano.de" target="_blank" class="s8-btn-primary">Demo buchen → vinano.de</a>
+        <a href="https://immobiliendemo.vinano.de" target="_blank" class="s8-btn-secondary">Live testen → immobiliendemo.vinano.de</a>
+      </div>
+      <div class="s8-footer" id="s8-footer">Frankfurt · Deutschland · Made for Real Estate Professionals</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Keyboard hint -->
+<div class="kbd-hint" id="kbdHint">
+  <kbd>←</kbd><kbd>→</kbd> navigieren &nbsp;·&nbsp; <kbd>Space</kbd> Pause/Play
+</div>
+
+<script>
+// ── Config ──────────────────────────────────────────────────────
+const SCENE_DURATION = 8000; // ms default
+const TOTAL_SCENES   = 8;
+// Per-scene duration overrides (scene index → ms)
+const SCENE_DURATIONS = new Map([[3, 10000], [7, 9000]]);
+function getSceneDur() { return SCENE_DURATIONS.get(current) || SCENE_DURATION; }
+// Console helper: goToScene(4) → jumps to scene 4
+window.goToScene = (n) => goTo(n - 1);
+
+// ── State ────────────────────────────────────────────────────────
+let current    = 0;
+let playing    = true;
+let timer      = null;
+let startTime  = null;
+let elapsed    = 0;
+let kbdTimeout = null;
+
+// ── DOM refs ─────────────────────────────────────────────────────
+const scenes      = Array.from(document.querySelectorAll('.scene'));
+const counter     = document.getElementById('sceneCounter');
+const progressBar = document.getElementById('progressBar');
+const btnPlay     = document.getElementById('btnPlay');
+const iconPlay    = document.getElementById('iconPlay');
+const iconPause   = document.getElementById('iconPause');
+const dotsEl      = document.getElementById('dots');
+const kbdHint     = document.getElementById('kbdHint');
+
+// ── Build dots ───────────────────────────────────────────────────
+for (let i = 0; i < TOTAL_SCENES; i++) {
+  const d = document.createElement('div');
+  d.className = 'dot' + (i === 0 ? ' active' : '');
+  d.innerHTML = '<div class="dot-fill"></div>';
+  d.addEventListener('click', () => goTo(i));
+  dotsEl.appendChild(d);
+}
+const dotEls = Array.from(dotsEl.querySelectorAll('.dot'));
+
+// ── RAF progress loop ─────────────────────────────────────────────
+let rafId = null;
+function tick(ts) {
+  if (!playing) return;
+  if (!startTime) startTime = ts;
+  const total = elapsed + (ts - startTime);
+  const pct   = Math.min(total / getSceneDur() * 100, 100);
+  progressBar.style.width = pct + '%';
+  if (total >= getSceneDur()) {
+    advance();
+  } else {
+    rafId = requestAnimationFrame(tick);
+  }
+}
+
+function startTick() {
+  cancelAnimationFrame(rafId);
+  startTime = null;
+  rafId = requestAnimationFrame(tick);
+}
+
+function pauseTick() {
+  if (startTime !== null) {
+    elapsed += performance.now() - startTime;
+    startTime = null;
+  }
+  cancelAnimationFrame(rafId);
+}
+
+// ── Navigation ────────────────────────────────────────────────────
+function activate(idx) {
+  const prev = current;
+  pauseTick(); // always kill running timer before switching
+  if (prev === 1) scene2Leave();
+  if (prev === 2) scene3Leave();
+  if (prev === 3) scene4Leave();
+  if (prev === 4) scene5Leave();
+  if (prev === 5) scene6Leave();
+  if (prev === 6) scene7Leave();
+  if (prev === 7) scene8Leave();
+
+  scenes[current].classList.remove('active');
+  dotEls[current].classList.remove('active');
+  current = ((idx % TOTAL_SCENES) + TOTAL_SCENES) % TOTAL_SCENES;
+  scenes[current].classList.add('active');
+  dotEls.forEach((d, i) => d.classList.toggle('active', i === current));
+  counter.textContent = `# SZENE ${String(current + 1).padStart(2,'0')} / ${String(TOTAL_SCENES).padStart(2,'0')}`;
+  elapsed = 0;
+  progressBar.style.width = '0%';
+
+  if (current === 0) scene1Enter(); else s1Clear();
+  if (current === 1) { scene2Enter(); return; } // audio controls timing
+  if (current === 2) scene3Enter();
+  if (current === 3) scene4Enter();
+  if (current === 4) scene5Enter();
+  if (current === 5) scene6Enter();
+  if (current === 6) scene7Enter();
+  if (current === 7) scene8Enter();
+  if (playing) startTick();
+}
+
+function advance() {
+  if (current === 7) return; // finale – hold, don't loop
+  activate(current + 1);
+}
+
+function goTo(idx) {
+  elapsed = 0;
+  activate(idx);
+}
+
+// ── Play / Pause ──────────────────────────────────────────────────
+function setPlaying(val) {
+  playing = val;
+  iconPlay.style.display  = playing ? 'none'  : 'block';
+  iconPause.style.display = playing ? 'block' : 'none';
+  if (playing) {
+    if (current === 1) {
+      s2Audio.play().catch(() => {});
+      s2Tick();
+    } else {
+      elapsed = 0;
+      startTick();
+    }
+  } else {
+    pauseTick();
+    if (current === 1) {
+      s2Audio.pause();
+      cancelAnimationFrame(s2RafId);
+    }
+  }
+}
+
+btnPlay.addEventListener('click', () => setPlaying(!playing));
+document.getElementById('btnPrev').addEventListener('click', () => { elapsed=0; activate(current - 1); });
+document.getElementById('btnNext').addEventListener('click', () => { elapsed=0; activate(current + 1); });
+
+// ── Keyboard ──────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  showKbd();
+  if (e.key === 'ArrowLeft')  { elapsed=0; activate(current - 1); }
+  if (e.key === 'ArrowRight') { elapsed=0; activate(current + 1); }
+  if (e.key === ' ')          { e.preventDefault(); setPlaying(!playing); }
+});
+
+function showKbd() {
+  kbdHint.classList.remove('hidden');
+  clearTimeout(kbdTimeout);
+  kbdTimeout = setTimeout(() => kbdHint.classList.add('hidden'), 3000);
+}
+
+// ── Particle system ────────────────────────────────────────────────
+(function particles() {
+  const canvas = document.getElementById('particles');
+  const ctx    = canvas.getContext('2d');
+  let W, H, pts;
+
+  const COUNT = 55;
+  const CYAN  = [125, 211, 216];
+
+  function resize() {
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+    init();
+  }
+
+  function rand(min, max) { return min + Math.random() * (max - min); }
+
+  function init() {
+    pts = Array.from({ length: COUNT }, () => ({
+      x:  rand(0, W), y:  rand(0, H),
+      vx: rand(-0.12, 0.12), vy: rand(-0.08, 0.04),
+      r:  rand(0.6, 2.0),
+      a:  rand(0.03, 0.18),
+      pulse: rand(0, Math.PI * 2),
+      pulseSpeed: rand(0.003, 0.008),
+    }));
+  }
+
+  function drawFrame() {
+    ctx.clearRect(0, 0, W, H);
+    pts.forEach(p => {
+      p.x += p.vx; p.y += p.vy;
+      p.pulse += p.pulseSpeed;
+      if (p.x < -5)   p.x = W + 5;
+      if (p.x > W + 5) p.x = -5;
+      if (p.y < -5)   p.y = H + 5;
+      if (p.y > H + 5) p.y = -5;
+      const alpha = p.a * (0.6 + 0.4 * Math.sin(p.pulse));
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${CYAN[0]},${CYAN[1]},${CYAN[2]},${alpha})`;
+      ctx.fill();
+      // subtle glow for larger particles
+      if (p.r > 1.4) {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r * 2.5, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${CYAN[0]},${CYAN[1]},${CYAN[2]},${alpha * 0.15})`;
+        ctx.fill();
+      }
+    });
+    requestAnimationFrame(drawFrame);
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+  drawFrame();
+})();
+
+// ── Scene 2: AI-Anruf ─────────────────────────────────────────────
+const s2Audio = document.getElementById('s2-audio');
+let s2RafId         = null;
+let s2StartTimer    = null;
+let s2FallbackTimer = null;
+let s2SimMode       = false;
+let s2SimStart      = 0;
+const S2_SIM_DUR    = 15;
+
+// ── Subtitle word timings – adjust here to resync ─────────────────
+const S2_CAPTIONS = [
+  { words: ['Hallo,','ich','sehe,','Sie','interessieren','sich','für','diese','Immobilie.'],
+    times:  [0.6,    1.05, 1.42,  1.82, 2.22,           2.88, 3.22, 3.52,  3.82], end: 4.2 },
+  { words: ['Ich','kann','Ihnen','gerne','weitere','Details','und','ähnliche','Angebote','per','E-Mail','oder','WhatsApp','zukommen','lassen.'],
+    times:  [4.3,  4.65, 4.95,  5.25,  5.55,    5.9,     6.18, 6.48,    6.88,     7.18, 7.48, 7.82, 8.12,    8.52,    8.88], end: 9.3 },
+  { words: ['Zuvor','möchte','ich','Sie','aber','noch','fragen:','Suchen','Sie','ein','Eigenheim','oder','eine','Kapitalanlage?'],
+    times:  [9.4,   9.8,    10.08,10.3, 10.58,10.88,11.18,   11.58,  11.88,12.12,12.42,     12.92,13.22,13.52], end: 14.5 },
+];
+
+// Amplitude envelope [time, amp 0-1] – controls waveform height
+const S2_ENV = [
+  [0,0],[0.45,0.1],[0.58,0.92],[3.88,0.92],[4.18,0.08],
+  [4.3,0.9],[8.9,0.9],[9.28,0.06],[9.4,0.92],[14.35,0.92],[14.72,0.04],[16,0],
+];
+
+function s2Lerp(t) {
+  for (let i = 0; i < S2_ENV.length - 1; i++) {
+    const [t0,a0] = S2_ENV[i], [t1,a1] = S2_ENV[i+1];
+    if (t >= t0 && t <= t1) {
+      const f = (t-t0)/(t1-t0), e = f<0.5 ? 2*f*f : -1+(4-2*f)*f;
+      return a0 + (a1-a0)*e;
+    }
+  }
+  return 0;
+}
+
+function s2DrawWave(audioT) {
+  const canvas = document.getElementById('s2-wave');
+  if (!canvas || !canvas._lw) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas._lw, H = canvas._lh;
+  ctx.clearRect(0, 0, W, H);
+
+  const amp = s2Lerp(audioT) * (H * 0.46);
+  const now = performance.now() * 0.001;
+  const cy  = H / 2;
+  const N   = Math.ceil(W) + 1;
+  const pts = new Float32Array(N);
+
+  // Multi-frequency voice wave with sin(πx) bell envelope – peaks center
+  for (let x = 0; x < N; x++) {
+    const nx  = x / W;
+    const env = Math.sin(nx * Math.PI);
+    pts[x] = (
+      Math.sin(nx * 28 + now * 3.9)  * 0.46 +
+      Math.sin(nx * 16 + now * 2.3)  * 0.27 +
+      Math.sin(nx * 43 + now * 5.6)  * 0.13 +
+      Math.sin(nx * 10 + now * 1.6)  * 0.21
+    ) * amp * env;
+  }
+
+  // Gradient fill between mirrored top/bottom waves
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0,   'rgba(125,211,216,0.14)');
+  grad.addColorStop(0.5, 'rgba(125,211,216,0.04)');
+  grad.addColorStop(1,   'rgba(125,211,216,0.14)');
+  ctx.beginPath();
+  for (let x = 0; x < N; x++) {
+    const y = cy - Math.abs(pts[x]);
+    x === 0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  }
+  for (let x = N-1; x >= 0; x--) ctx.lineTo(x, cy + Math.abs(pts[x]));
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Top + bottom lines (mirror)
+  ctx.strokeStyle = 'rgba(125,211,216,0.88)';
+  ctx.lineWidth   = 1.5;
+  ctx.lineJoin    = 'round';
+  ctx.shadowBlur  = 12;
+  ctx.shadowColor = 'rgba(125,211,216,0.55)';
+  for (const sign of [1, -1]) {
+    ctx.beginPath();
+    for (let x = 0; x < N; x++) {
+      const y = cy - sign * Math.abs(pts[x]);
+      x === 0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+  }
+}
+
+function s2RenderCaptions(t) {
+  const el = document.getElementById('s2-sub-text');
+  if (!el) return;
+  let cap = null;
+  for (const c of S2_CAPTIONS) {
+    if (t >= c.times[0] - 0.3 && t < c.end) { cap = c; break; }
+  }
+  if (!cap) { el.innerHTML = ''; return; }
+  el.innerHTML = cap.words.map((word, i) => {
+    const wS = cap.times[i], wE = cap.times[i+1] ?? cap.end;
+    const cls = t < wS ? 'pending' : t < wE ? 'current' : 'spoken';
+    return `<span class="s2-word ${cls}">${word}</span>`;
+  }).join(' ');
+}
+
+function s2GetT() {
+  return s2SimMode
+    ? Math.min((performance.now() - s2SimStart) / 1000, S2_SIM_DUR)
+    : s2Audio.currentTime;
+}
+
+function s2Tick() {
+  if (current !== 1) return;
+  const t   = s2GetT();
+  const dur = s2SimMode ? S2_SIM_DUR : (s2Audio.duration || 15);
+  progressBar.style.width = Math.min(t / dur * 100, 100) + '%';
+  const te = document.getElementById('s2-timer');
+  if (te) { const m=Math.floor(t/60),s=Math.floor(t%60); te.textContent=`${m}:${String(s).padStart(2,'0')}`; }
+  s2DrawWave(t);
+  s2RenderCaptions(t);
+  if (s2SimMode && t >= S2_SIM_DUR) { if (current===1) advance(); return; }
+  s2RafId = requestAnimationFrame(s2Tick);
+}
+
+function s2InitCanvas() {
+  const c = document.getElementById('s2-wave');
+  if (!c) return;
+  const dpr = window.devicePixelRatio || 1;
+  c._lw = c.offsetWidth; c._lh = c.offsetHeight;
+  if (c._lw > 0 && c._lh > 0) {
+    c.width = c._lw * dpr; c.height = c._lh * dpr;
+    c.getContext('2d').scale(dpr, dpr);
+  }
+}
+
+function scene2Enter() {
+  clearTimeout(s2StartTimer);
+  clearTimeout(s2FallbackTimer);
+  cancelAnimationFrame(s2RafId);
+  s2Audio.pause(); s2Audio.currentTime = 0;
+  s2SimMode = false;
+  progressBar.style.width = '0%';
+  const te = document.getElementById('s2-timer'); if (te) te.textContent = '0:00';
+  const se = document.getElementById('s2-sub-text'); if (se) se.innerHTML = '';
+
+  setTimeout(() => {
+    s2InitCanvas();
+    s2DrawWave(0);
+    if (!playing) return;
+    s2StartTimer = setTimeout(() => {
+      const p = s2Audio.play();
+      if (p) p.catch(() => { s2SimMode = true; s2SimStart = performance.now(); });
+      s2Tick();
+      // Hard fallback if 'ended' never fires (e.g. CORS or network issue)
+      s2FallbackTimer = setTimeout(() => { if (current === 1) advance(); }, 17000);
+    }, 500);
+  }, 50);
+}
+
+function scene2Leave() {
+  clearTimeout(s2StartTimer);
+  clearTimeout(s2FallbackTimer);
+  cancelAnimationFrame(s2RafId);
+  s2Audio.pause();
+  s2Audio.currentTime = 0;
+}
+
+s2Audio.addEventListener('ended', () => {
+  clearTimeout(s2FallbackTimer);
+  cancelAnimationFrame(s2RafId);
+  progressBar.style.width = '100%';
+  if (current === 1) setTimeout(() => { if (current === 1) advance(); }, 1000);
+});
+
+// ── Scene 3: Lead-Score Dashboard ─────────────────────────────────
+// ── Config: change these values to update dashboard data ──────────
+const S3_CONFIG = {
+  score: 87,                    // ← Score (0-100)
+  bars: [                       // ← Criteria bars (val = %)
+    { barId: 's3-bar-1', pctId: 's3-pct-1', val: 95 },
+    { barId: 's3-bar-2', pctId: 's3-pct-2', val: 88 },
+    { barId: 's3-bar-3', pctId: 's3-pct-3', val: 78 },
+    { barId: 's3-bar-4', pctId: 's3-pct-4', val: 92 },
+  ],
+  // ── Animation timings (seconds) ──────────────────────────────────
+  t: {
+    header:    0.0,   // header badge fade-in
+    cards:     0.1,   // main cards stagger start
+    rows:      0.4,   // profile row stagger
+    score:     0.8,   // score ring + counter start
+    scoreDur:  1.5,   // how long score counts up
+    bars:      1.5,   // first bar start
+    barStagger:0.3,   // delay between each bar
+    barDur:    0.65,  // each bar fill duration
+    actions:   3.5,   // first action item
+    actStagger:0.45,  // delay between action items
+  }
+};
+
+let s3Tl = null;
+
+function scene3Enter() {
+  if (typeof gsap === 'undefined') return;
+  if (s3Tl) s3Tl.kill();
+
+  // Reset all elements to initial (hidden) state
+  gsap.set(['#s3-profile-card','#s3-buyer-card','#s3-score-card','#s3-bars-card','#s3-actions-card'],
+    { opacity: 0, y: 16 });
+  gsap.set('#s3-hdr', { opacity: 0, y: -8 });
+  gsap.set('.s3-action-item', { opacity: 0, x: 12 });
+  gsap.set('.s3-profile-row', { opacity: 0, x: -8 });
+  const el = document.getElementById('s3-score-num');
+  if (el) el.textContent = '0';
+  gsap.set('#s3-arc', { strokeDashoffset: 339 });
+  S3_CONFIG.bars.forEach(b => {
+    const bar = document.getElementById(b.barId);
+    const pct = document.getElementById(b.pctId);
+    if (bar) bar.style.width = '0%';
+    if (pct) pct.textContent = '0%';
+  });
+
+  const T = S3_CONFIG.t;
+  s3Tl = gsap.timeline();
+
+  // Header badge
+  s3Tl.to('#s3-hdr', { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, T.header);
+
+  // Cards appear with stagger
+  s3Tl.to(['#s3-profile-card', '#s3-score-card', '#s3-bars-card'],
+    { opacity: 1, y: 0, duration: 0.55, stagger: 0.1, ease: 'power2.out' }, T.cards);
+  s3Tl.to(['#s3-buyer-card', '#s3-actions-card'],
+    { opacity: 1, y: 0, duration: 0.55, stagger: 0.1, ease: 'power2.out' }, T.cards + 0.25);
+
+  // Profile rows stagger in
+  s3Tl.to('.s3-profile-row',
+    { opacity: 1, x: 0, duration: 0.32, stagger: 0.07, ease: 'power2.out' }, T.rows);
+
+  // Score counter
+  const scoreObj = { val: 0 };
+  s3Tl.to(scoreObj, {
+    val: S3_CONFIG.score, duration: T.scoreDur, ease: 'power2.out',
+    onUpdate: () => {
+      const n = document.getElementById('s3-score-num');
+      if (n) n.textContent = Math.round(scoreObj.val);
+    }
+  }, T.score);
+
+  // Score ring
+  s3Tl.to('#s3-arc', {
+    strokeDashoffset: 339 * (1 - S3_CONFIG.score / 100),
+    duration: T.scoreDur, ease: 'power2.out'
+  }, T.score);
+  // Bounce when score hits final value
+  s3Tl.to('#s3-score-num', { scale: 1.08, duration: 0.1, yoyo: true, repeat: 1, ease: 'power2.out', transformOrigin: '50% 50%' }, T.score + T.scoreDur + 0.04);
+
+  // Criteria bars – staggered
+  S3_CONFIG.bars.forEach((b, i) => {
+    const obj = { v: 0 };
+    s3Tl.to(obj, {
+      v: b.val, duration: T.barDur, ease: 'power2.out',
+      onUpdate: () => {
+        const bar = document.getElementById(b.barId);
+        const pct = document.getElementById(b.pctId);
+        if (bar) bar.style.width = obj.v + '%';
+        if (pct) pct.textContent = Math.round(obj.v) + '%';
+      }
+    }, T.bars + i * T.barStagger);
+  });
+
+  // Action items pop in
+  s3Tl.to('.s3-action-item',
+    { opacity: 1, x: 0, duration: 0.45, stagger: T.actStagger, ease: 'back.out(1.5)' },
+    T.actions);
+}
+
+function scene3Leave() {
+  if (s3Tl) { s3Tl.kill(); s3Tl = null; }
+}
+
+// ── Scene 4: Terminvermittlung ─────────────────────────────────────
+// ── Config: adjust texts & timing here ────────────────────────────
+const S4_CONFIG = {
+  // WhatsApp messages (edit text here for config.json later)
+  msgs: [
+    'Hallo Markus 👋 Schön, dass Sie sich für das Penthouse im Westend interessieren!',
+    'Ich habe für Sie einen passenden Besichtigungstermin gefunden:',
+    null, // appointment card (rendered in HTML)
+    'Bei Rückfragen stehe ich jederzeit gerne zur Verfügung. 🤝',
+  ],
+  // Appointment data (edit here)
+  appt: { date: 'Mittwoch, 7. Mai 2025', time: '15:00 – 16:00 Uhr' },
+  // Animation timings (seconds from scene start)
+  t: {
+    slots:      0.3,   // slots stagger start
+    checks:     0.9,   // check items stagger
+    apptCard:   2.3,   // appointment card
+    phoneIn:    3.2,   // phone slides in
+    typing1:    3.9,   // first typing indicator
+    msg1:       4.65,  // first message
+    typing2:    5.1,   // second typing
+    msg2:       5.95,  // second message
+    typing3:    6.4,   // third typing (before card)
+    msg3:       7.45,  // appointment card
+    typing4:    8.2,   // fourth typing
+    msg4:       8.95,  // last message
+  }
+};
+
+let s4Tl = null;
+
+function scene4Enter() {
+  if (typeof gsap === 'undefined') return;
+  if (s4Tl) s4Tl.kill();
+
+  const T = S4_CONFIG.t;
+
+  // Reset all to initial hidden state
+  gsap.set(['.s4-slot', '.s4-check-item', '#s4-appt'], { opacity: 0, y: 10 });
+  gsap.set('#s4-phone-wrap', { opacity: 0, x: 36 });
+  gsap.set(['#s4-typing', '#s4-msg1', '#s4-msg2', '#s4-msg3', '#s4-msg4'],
+    { opacity: 0, scale: 0.88, y: 6 });
+
+  // Reset chat scroll
+  const chat = document.getElementById('s4-wa-chat');
+  if (chat) chat.scrollTop = 0;
+
+  s4Tl = gsap.timeline();
+
+  // Slots appear with stagger
+  s4Tl.to('.s4-slot', { opacity: 1, y: 0, duration: 0.38, stagger: 0.12, ease: 'power2.out' }, T.slots);
+
+  // Match indicators pop in
+  s4Tl.to('.s4-check-item', { opacity: 1, x: 0, y: 0, duration: 0.38, stagger: 0.32, ease: 'back.out(1.4)' }, T.checks);
+
+  // Appointment card
+  s4Tl.to('#s4-appt', { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, T.apptCard);
+
+  // Phone slides in from right
+  s4Tl.to('#s4-phone-wrap', { opacity: 1, x: 0, duration: 0.65, ease: 'power3.out' }, T.phoneIn);
+
+  // Helper: scroll chat to bottom
+  const scrollChat = () => { if (chat) chat.scrollTop = chat.scrollHeight; };
+
+  // Typing 1 → msg 1
+  s4Tl.to('#s4-typing', { opacity: 1, scale: 1, y: 0, duration: 0.22, ease: 'back.out(1.5)' }, T.typing1);
+  s4Tl.set('#s4-typing', { opacity: 0 }, T.msg1 - 0.05);
+  s4Tl.to('#s4-msg1', { opacity: 1, scale: 1, y: 0, duration: 0.3, ease: 'back.out(1.2)', onComplete: scrollChat }, T.msg1);
+
+  // Typing 2 → msg 2
+  s4Tl.to('#s4-typing', { opacity: 1, scale: 1, y: 0, duration: 0.18, ease: 'back.out' }, T.typing2);
+  s4Tl.set('#s4-typing', { opacity: 0 }, T.msg2 - 0.05);
+  s4Tl.to('#s4-msg2', { opacity: 1, scale: 1, y: 0, duration: 0.3, ease: 'back.out(1.2)', onComplete: scrollChat }, T.msg2);
+
+  // Typing 3 → appointment card
+  s4Tl.to('#s4-typing', { opacity: 1, scale: 1, y: 0, duration: 0.18, ease: 'back.out' }, T.typing3);
+  s4Tl.set('#s4-typing', { opacity: 0 }, T.msg3 - 0.05);
+  s4Tl.to('#s4-msg3', { opacity: 1, scale: 1, y: 0, duration: 0.45, ease: 'back.out(1.1)', onComplete: scrollChat }, T.msg3);
+
+  // Typing 4 → last message
+  s4Tl.to('#s4-typing', { opacity: 1, scale: 1, y: 0, duration: 0.18, ease: 'back.out' }, T.typing4);
+  s4Tl.set('#s4-typing', { opacity: 0 }, T.msg4 - 0.05);
+  s4Tl.to('#s4-msg4', { opacity: 1, scale: 1, y: 0, duration: 0.28, ease: 'back.out', onComplete: scrollChat }, T.msg4);
+}
+
+function scene4Leave() {
+  if (s4Tl) { s4Tl.kill(); s4Tl = null; }
+}
+
+// ── Scene 5: Follow-up Timeline ───────────────────────────────────
+let s5Tl = null;
+function scene5Enter() {
+  if (typeof gsap === 'undefined') return;
+  if (s5Tl) s5Tl.kill();
+  gsap.set(['#s5-header','.s5-node','#s5-stat','.s5-stat-row'], { opacity: 0 });
+  gsap.set('.s5-node', { y: 12 });
+  gsap.set('#s5-line', { width: '0%' });
+  s5Tl = gsap.timeline();
+  s5Tl.to('#s5-header', { opacity: 1, duration: 0.5, ease: 'power2.out' }, 0);
+  s5Tl.to('#s5-line', { width: '100%', duration: 1.2, ease: 'power2.inOut' }, 0.3);
+  s5Tl.to('.s5-node', { opacity: 1, y: 0, duration: 0.4, stagger: 0.18, ease: 'back.out(1.3)' }, 0.4);
+  // Hero dot pulse
+  s5Tl.to('#s5-hero-dot', { boxShadow: '0 0 20px rgba(125,211,216,.9),0 0 40px rgba(125,211,216,.5)', duration: 0.6, yoyo: true, repeat: 3, ease: 'power2.inOut' }, 2.2);
+  // Stats appear
+  s5Tl.to('.s5-stat-row', { opacity: 1, duration: 0.5, ease: 'power2.out' }, 3.0);
+}
+function scene5Leave() { if (s5Tl) { s5Tl.kill(); s5Tl = null; } }
+
+// ── Scene 6: CRM Dashboard ────────────────────────────────────────
+let s6Tl = null;
+const S6_CONFIG = {
+  // Edit KPI values here
+  kpis: [
+    { id: 's6-k1', val: 23, suffix: '' },
+    { id: 's6-k2', val: 8,  suffix: '' },
+    { id: 's6-k3', val: 34, suffix: '%' },
+    { id: 's6-k4', val: 47, suffix: 's' },
+  ]
+};
+function scene6Enter() {
+  if (typeof gsap === 'undefined') return;
+  if (s6Tl) s6Tl.kill();
+  gsap.set(['#s6-top', '.s6-col', '#s6-feed', '.s6-feed-item', '#s6-markus'], { opacity: 0 });
+  gsap.set('.s6-col', { y: 14 });
+  gsap.set('.s6-feed-item', { x: 12 });
+  S6_CONFIG.kpis.forEach(k => { const el = document.getElementById(k.id); if (el) el.textContent = '0' + k.suffix; });
+  s6Tl = gsap.timeline();
+  s6Tl.to('#s6-top', { opacity: 1, duration: 0.5, ease: 'power2.out' }, 0);
+  // KPI counters
+  S6_CONFIG.kpis.forEach((k, i) => {
+    const obj = { v: 0 };
+    s6Tl.to(obj, { v: k.val, duration: 0.8, ease: 'power2.out',
+      onUpdate: () => { const el = document.getElementById(k.id); if (el) el.textContent = Math.round(obj.v) + k.suffix; }
+    }, 0.4 + i * 0.1);
+  });
+  // Kanban columns stagger
+  s6Tl.to('.s6-col', { opacity: 1, y: 0, duration: 0.5, stagger: 0.18, ease: 'power2.out' }, 1.0);
+  // Markus card highlight
+  s6Tl.fromTo('#s6-markus', { opacity: 0, scale: 0.95 }, { opacity: 1, scale: 1, duration: 0.5, ease: 'back.out(1.3)' }, 1.5);
+  // Activity feed
+  s6Tl.to('#s6-feed', { opacity: 1, duration: 0.4, ease: 'power2.out' }, 2.5);
+  s6Tl.to('.s6-feed-item', { opacity: 1, x: 0, duration: 0.4, stagger: 0.35, ease: 'power2.out' }, 2.7);
+  // Markus card pulse
+  s6Tl.to('#s6-markus', { boxShadow: '0 0 24px rgba(125,211,216,.25),0 0 0 1px rgba(125,211,216,.4)', duration: 0.8, yoyo: true, repeat: 2, ease: 'power2.inOut' }, 4.0);
+}
+function scene6Leave() { if (s6Tl) { s6Tl.kill(); s6Tl = null; } }
+
+// ── Scene 7: Review Request ───────────────────────────────────────
+let s7Tl = null;
+// Edit review text here
+const S7_REVIEW_TEXT = '"Absolut professioneller Service. Innerhalb von Minuten hatte ich mehrere passende Objekte zur Auswahl und konnte direkt einen Besichtigungstermin vereinbaren. Klare Empfehlung!"';
+function scene7Enter() {
+  if (typeof gsap === 'undefined') return;
+  if (s7Tl) s7Tl.kill();
+  gsap.set(['#s7-header', '#s7-trigger', '#s7-arrow', '#s7-phone', '#s7-google'], { opacity: 0 });
+  gsap.set('.s7-star', { color: 'rgba(255,255,255,.1)' });
+  gsap.set('#s7-review', { textContent: '' });
+  const revEl = document.getElementById('s7-review');
+  s7Tl = gsap.timeline();
+  s7Tl.to('#s7-header', { opacity: 1, duration: 0.5, ease: 'power2.out' }, 0);
+  s7Tl.to('#s7-trigger', { opacity: 1, duration: 0.5, ease: 'power2.out' }, 0.3);
+  s7Tl.to('#s7-arrow', { opacity: 1, duration: 0.4, ease: 'power2.out' }, 1.0);
+  s7Tl.to('#s7-phone', { opacity: 1, duration: 0.5, ease: 'power2.out' }, 1.5);
+  s7Tl.to('#s7-google', { opacity: 1, duration: 0.5, ease: 'power2.out' }, 2.8);
+  // Stars light up one by one
+  ['#s7-s1','#s7-s2','#s7-s3','#s7-s4','#s7-s5'].forEach((id, i) => {
+    s7Tl.to(id, { color: '#FFD700', textShadow: '0 0 12px rgba(255,215,0,.5)', duration: 0.25, ease: 'back.out' }, 3.2 + i * 0.15);
+  });
+  // Review text typing
+  if (revEl) {
+    let charIdx = 0;
+    const chars = S7_REVIEW_TEXT.split('');
+    s7Tl.to({}, {
+      duration: chars.length * 0.025, ease: 'none',
+      onUpdate: function() {
+        const progress = this.progress();
+        const target = Math.floor(progress * chars.length);
+        if (target > charIdx) { charIdx = target; revEl.textContent = chars.slice(0, charIdx).join(''); }
+      }
+    }, 4.0);
+  }
+}
+function scene7Leave() { if (s7Tl) { s7Tl.kill(); s7Tl = null; } }
+
+// ── Scene 8: Finale ───────────────────────────────────────────────
+let s8Tl = null;
+// Edit achievement values here
+const S8_CONFIG = {
+  counters: [
+    { id: 's8-v1', val: 47 },
+    { id: 's8-v2', val: 87 },
+    { id: 's8-v3', val: 0  },
+    { id: 's8-v5', val: 9  },
+  ]
+};
+function scene8Enter() {
+  if (typeof gsap === 'undefined') return;
+  if (s8Tl) s8Tl.kill();
+  gsap.set(['#s8-logo','#s8-headline','#s8-grid','#s8-tagline','#s8-cta','#s8-footer'], { opacity: 0 });
+  gsap.set('#s8-headline', { y: 12 });
+  gsap.set('#s8-grid', { y: 16 });
+  gsap.set('#s8-cta', { y: 10 });
+  S8_CONFIG.counters.forEach(c => { const el = document.getElementById(c.id); if (el) el.textContent = '0'; });
+  s8Tl = gsap.timeline();
+  s8Tl.to('#s8-logo', { opacity: 1, duration: 0.6, ease: 'power2.out' }, 0);
+  s8Tl.to('#s8-headline', { opacity: 1, y: 0, duration: 0.7, ease: 'power2.out' }, 0.5);
+  s8Tl.to('#s8-grid', { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out' }, 1.2);
+  // Achievement counters + stagger
+  s8Tl.fromTo(['.s8-achiev'],
+    { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.45, stagger: 0.18, ease: 'back.out(1.2)' }, 1.3);
+  S8_CONFIG.counters.forEach((c, i) => {
+    const obj = { v: 0 };
+    const startT = 1.5 + i * 0.2;
+    s8Tl.to(obj, { v: c.val, duration: 0.8, ease: 'power2.out',
+      onUpdate: () => { const el = document.getElementById(c.id); if (el) el.textContent = Math.round(obj.v); }
+    }, startT);
+    // Bounce on completion
+    s8Tl.to(`#${c.id}`, { scale: 1.08, duration: 0.1, yoyo: true, repeat: 1, ease: 'power2.out', transformOrigin: '50% 50%' }, startT + 0.84);
+  });
+  s8Tl.to('#s8-tagline', { opacity: 1, duration: 0.6, ease: 'power2.out' }, 2.8);
+  s8Tl.to('#s8-cta', { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out' }, 3.2);
+  s8Tl.to('#s8-footer', { opacity: 1, duration: 0.5, ease: 'power2.out' }, 3.6);
+  // Breathing pulse on logo
+  s8Tl.to('#s8-logo img', { filter: 'drop-shadow(0 0 28px rgba(125,211,216,.7))', duration: 2, yoyo: true, repeat: -1, ease: 'power2.inOut' }, 4.0);
+}
+function scene8Leave() { if (s8Tl) { s8Tl.kill(); s8Tl = null; } }
+
+// ── Scene 1: Typing animation ─────────────────────────────────────
+const s1Timers = [];
+
+function s1Clear() {
+  s1Timers.forEach(id => { clearTimeout(id); clearInterval(id); });
+  s1Timers.length = 0;
+}
+
+function s1Type(el, text, speed, cb) {
+  el.value = '';
+  let i = 0;
+  const iv = setInterval(() => {
+    el.value = text.slice(0, ++i);
+    if (i >= text.length) { clearInterval(iv); if (cb) cb(); }
+  }, speed);
+  s1Timers.push(iv);
+}
+
+function scene1Enter() {
+  s1Clear();
+  const nameEl  = document.getElementById('s1-name');
+  const emailEl = document.getElementById('s1-email');
+  const telEl   = document.getElementById('s1-tel');
+  const btn     = document.getElementById('s1-btn');
+  const note    = document.getElementById('s1-note');
+
+  nameEl.value = ''; emailEl.value = ''; telEl.value = '';
+  btn.className = 's1-btn-idle';
+  btn.textContent = 'Absenden';
+  note.style.opacity = '0';
+
+  const t0 = setTimeout(() => {
+    s1Type(nameEl, 'Markus Hoffmann', 62, () => {
+      const t1 = setTimeout(() => {
+        s1Type(emailEl, 'm.hoffmann@email.de', 52, () => {
+          const t2 = setTimeout(() => {
+            s1Type(telEl, '+49 171 4823 601', 62, () => {
+              const t3 = setTimeout(() => {
+                btn.className = 's1-btn-sent';
+                btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Gesendet';
+                const t4 = setTimeout(() => { note.style.opacity = '1'; }, 350);
+                s1Timers.push(t4);
+              }, 480);
+              s1Timers.push(t3);
+            });
+          }, 140);
+          s1Timers.push(t2);
+        });
+      }, 140);
+      s1Timers.push(t1);
+    });
+  }, 500);
+  s1Timers.push(t0);
+}
+
+// ── Init ──────────────────────────────────────────────────────────
+scene1Enter(); // pre-warm animations while loader is visible
+const loaderEl = document.getElementById('loader');
+if (loaderEl) {
+  setTimeout(() => {
+    loaderEl.style.opacity = '0';
+    loaderEl.style.pointerEvents = 'none';
+    setTimeout(() => {
+      loaderEl.remove();
+      setPlaying(true);
+      setTimeout(showKbd, 800);
+    }, 600);
+  }, 1500);
+} else {
+  setPlaying(true);
+  setTimeout(showKbd, 800);
+}
+</script>
+</body>
+</html>
