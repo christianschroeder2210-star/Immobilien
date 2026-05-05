@@ -1,6 +1,3 @@
-Index · HTML
-Kopieren
-
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -15,7 +12,7 @@ Kopieren
   <style>
     /* ── Reset & Base ── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
- 
+
     :root {
       --bg:        #0B0B0B;
       --card:      #1A1A1A;
@@ -28,7 +25,7 @@ Kopieren
       --border:    rgba(255,255,255,0.07);
       --scene-dur: 8000;
     }
- 
+
     html, body {
       width: 100%; height: 100%;
       overflow: hidden;
@@ -37,7 +34,7 @@ Kopieren
       font-family: 'Inter Tight', sans-serif;
       -webkit-font-smoothing: antialiased;
     }
- 
+
     /* ── Grain overlay ── */
     body::before {
       content: '';
@@ -47,17 +44,17 @@ Kopieren
       background-size: 180px 180px;
       opacity: 0.35;
     }
- 
+
     /* ── Particle canvas ── */
     #particles { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
- 
+
     /* ── Main wrapper ── */
     .shell {
       position: relative; z-index: 2;
       width: 100vw; height: 100vh;
       display: flex; flex-direction: column;
     }
- 
+
     /* ── Header bar ── */
     .hdr {
       position: fixed; top: 0; left: 0; right: 0; z-index: 100;
@@ -65,7 +62,7 @@ Kopieren
       padding: 20px 32px;
       pointer-events: none;
     }
- 
+
     /* Logo */
     .logo {
       display: flex; align-items: center; gap: 10px;
@@ -86,7 +83,7 @@ Kopieren
       font-size: 8px; font-weight: 400; letter-spacing: 0.25em;
       color: var(--accent); margin-top: 2px;
     }
- 
+
     /* Controls cluster (top-right) */
     .controls {
       display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
@@ -111,7 +108,7 @@ Kopieren
     .ctrl-btn svg { width: 14px; height: 14px; }
     .ctrl-btn.play { width: 36px; height: 36px; background: var(--accent); border-color: transparent; color: var(--bg); }
     .ctrl-btn.play:hover { background: #9de4e8; }
- 
+
     /* Scene dots */
     .dots {
       display: flex; align-items: center; gap: 5px;
@@ -132,7 +129,7 @@ Kopieren
       transition: none;
     }
     .dot.active .dot-fill { animation: none; }
- 
+
     /* Progress bar (top) */
     .progress-bar {
       position: fixed; top: 0; left: 0; z-index: 200;
@@ -140,7 +137,7 @@ Kopieren
       width: 0%; transition: none;
       box-shadow: 0 0 8px var(--accent);
     }
- 
+
     /* ── Scene container ── */
     .scenes { position: fixed; inset: 0; }
     .scene {
@@ -155,7 +152,7 @@ Kopieren
       opacity: 1; filter: blur(0px);
       pointer-events: auto;
     }
- 
+
     /* ── Placeholder scene cards ── */
     .placeholder {
       display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -189,7 +186,7 @@ Kopieren
       border: 1px solid rgba(125,211,216,0.25);
       border-radius: 20px; padding: 5px 14px;
     }
- 
+
     /* ── Glassmorphism helper ── */
     .glass {
       background: rgba(26,26,26,0.7);
@@ -198,7 +195,7 @@ Kopieren
       border: 1px solid var(--border);
       border-radius: 16px;
     }
- 
+
     /* ── Keyboard hint ── */
     .kbd-hint {
       position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
@@ -217,7 +214,7 @@ Kopieren
       font-family: inherit; font-size: 10px;
     }
     .kbd-hint.hidden { opacity: 0; }
- 
+
     /* ── Scene 1: Exposé-Anfrage ── */
     .s1-bg {
       position: absolute; inset: 0; z-index: -1;
@@ -225,15 +222,15 @@ Kopieren
       filter: blur(14px) brightness(0.18);
       transform: scale(1.08);
     }
- 
+
     .s1-wrap {
       display: flex; gap: 20px; align-items: flex-start;
       width: 100%; max-width: 1100px;
     }
- 
+
     .s1-listing { flex: 1.5; padding: 32px; }
     .s1-form-card { flex: 1; padding: 32px; }
- 
+
     .scene.active .s1-listing {
       animation: s1-in-left 0.7s cubic-bezier(.25,.46,.45,.94) both;
     }
@@ -248,7 +245,7 @@ Kopieren
       from { opacity: 0; transform: translateX(28px); }
       to   { opacity: 1; transform: translateX(0); }
     }
- 
+
     .s1-location {
       display: flex; align-items: center; gap: 8px;
       font-size: 11px; font-weight: 600; letter-spacing: 0.2em;
@@ -263,18 +260,18 @@ Kopieren
       0%, 100% { box-shadow: 0 0 0 0 rgba(125,211,216,0.5); }
       50%       { box-shadow: 0 0 0 5px rgba(125,211,216,0); }
     }
- 
+
     .s1-title {
       font-size: 40px; font-weight: 800; line-height: 1.08;
       letter-spacing: -0.025em; margin-bottom: 18px; color: var(--white);
     }
     .s1-title-muted { color: rgba(255,255,255,0.5); }
- 
+
     .s1-price {
       font-size: 32px; font-weight: 700; letter-spacing: -0.02em;
       color: var(--accent); margin-bottom: 16px;
     }
- 
+
     .s1-specs {
       display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;
     }
@@ -282,7 +279,7 @@ Kopieren
       display: flex; align-items: center; gap: 7px;
       font-size: 13px; color: rgba(255,255,255,0.55);
     }
- 
+
     .s1-grid {
       display: grid; grid-template-columns: 1fr 1fr;
       grid-template-rows: 1fr 1fr; gap: 6px; height: 190px;
@@ -292,7 +289,7 @@ Kopieren
       object-fit: cover; border-radius: 6px;
     }
     .s1-grid img:first-child { grid-row: 1 / 3; }
- 
+
     .s1-form-title {
       font-size: 22px; font-weight: 700; color: var(--white); margin-bottom: 4px;
     }
@@ -312,7 +309,7 @@ Kopieren
       font-size: 14px; font-family: 'Inter Tight', sans-serif;
       outline: none;
     }
- 
+
     .s1-btn-idle {
       width: 100%; padding: 15px;
       background: rgba(255,255,255,0.06);
@@ -322,7 +319,7 @@ Kopieren
       font-size: 15px; font-weight: 600;
       cursor: default; margin-top: 8px;
     }
- 
+
     .s1-btn-sent {
       width: 100%; padding: 15px;
       background: var(--accent); border: none; border-radius: 10px;
@@ -331,15 +328,15 @@ Kopieren
       display: flex; align-items: center; justify-content: center; gap: 8px;
       cursor: default; margin-top: 8px;
     }
- 
+
     .s1-ai-note {
       text-align: center; margin-top: 12px;
       font-size: 12px; color: var(--accent); letter-spacing: 0.04em;
       transition: opacity 0.5s;
     }
- 
+
     /* ── Scene 2: AI-Anruf ── */
- 
+
     /* Atmospheric background: two layered radial glows */
     .s2-atmo {
       position: absolute; inset: 0; z-index: -1; pointer-events: none;
@@ -347,12 +344,12 @@ Kopieren
         radial-gradient(ellipse 50% 35% at 50% 32%, rgba(125,211,216,0.09) 0%, transparent 55%),
         radial-gradient(ellipse 90% 25% at 50% 58%, rgba(125,211,216,0.03) 0%, transparent 65%);
     }
- 
+
     .s2-wrap {
       display: flex; flex-direction: column; align-items: center;
       gap: 28px; width: 100%;
     }
- 
+
     /* Entry animations */
     .scene.active .s2-identity  { animation: s2-up 1s cubic-bezier(.16,1,.3,1) both; }
     .scene.active .s2-wave-wrap { animation: s2-up 1s cubic-bezier(.16,1,.3,1) 0.12s both; }
@@ -361,12 +358,12 @@ Kopieren
       from { opacity: 0; transform: translateY(20px); }
       to   { opacity: 1; transform: translateY(0); }
     }
- 
+
     /* Identity cluster – no card, elements float on bg */
     .s2-identity {
       display: flex; flex-direction: column; align-items: center; gap: 16px;
     }
- 
+
     /* Logo zone */
     .s2-logo-zone {
       position: relative; width: 100px; height: 100px;
@@ -402,7 +399,7 @@ Kopieren
       0%, 100% { filter: drop-shadow(0 0 20px rgba(125,211,216,0.45)) drop-shadow(0 0 48px rgba(125,211,216,0.18)); }
       50%       { filter: drop-shadow(0 0 30px rgba(125,211,216,0.7))  drop-shadow(0 0 64px rgba(125,211,216,0.3)); }
     }
- 
+
     /* Status row */
     .s2-status-row {
       display: flex; align-items: center; gap: 9px;
@@ -419,7 +416,7 @@ Kopieren
       font-size: 11px; font-weight: 700; letter-spacing: 0.26em;
       color: var(--accent); text-transform: uppercase;
     }
- 
+
     /* Meta row */
     .s2-meta {
       display: flex; align-items: center; gap: 10px;
@@ -427,11 +424,11 @@ Kopieren
       letter-spacing: 0.05em; font-variant-numeric: tabular-nums;
     }
     .s2-msep { opacity: 0.3; }
- 
+
     /* Full-width waveform */
     .s2-wave-wrap { width: 100%; }
     #s2-wave { width: 100%; height: 100px; display: block; }
- 
+
     /* Subtitle panel */
     .s2-sub-panel {
       width: 100%; max-width: 800px;
@@ -449,13 +446,13 @@ Kopieren
     .s2-word.pending { color: rgba(255,255,255,0.2); }
     .s2-word.current { color: var(--accent); }
     .s2-word.spoken  { color: rgba(255,255,255,0.9); }
- 
+
     /* ── Scene 3: Lead-Score Dashboard ── */
     .s3-wrap {
       display: flex; flex-direction: column; align-items: center;
       gap: 14px; width: 100%; max-width: 980px;
     }
- 
+
     .s3-hdr {
       display: flex; align-items: center; gap: 16px; opacity: 0;
     }
@@ -472,13 +469,13 @@ Kopieren
     .s3-hdr-time {
       font-size: 12px; color: rgba(255,255,255,0.3); letter-spacing: 0.04em;
     }
- 
+
     .s3-main {
       display: grid; grid-template-columns: 1fr 1fr 1fr;
       gap: 12px; width: 100%;
     }
     .s3-col { display: flex; flex-direction: column; gap: 12px; }
- 
+
     /* Premium card – layered depth */
     .s3-card {
       background: linear-gradient(158deg, rgba(26,26,26,0.9) 0%, rgba(14,14,14,0.95) 100%);
@@ -495,7 +492,7 @@ Kopieren
       color: rgba(255,255,255,0.35); text-transform: uppercase; margin-bottom: 14px;
     }
     .s3-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 14px 0; }
- 
+
     /* Profile card */
     .s3-avatar-row { display: flex; align-items: center; gap: 12px; }
     .s3-avatar {
@@ -516,7 +513,7 @@ Kopieren
       border-radius: 20px; padding: 3px 10px;
     }
     .s3-qual-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
- 
+
     .s3-detail-row {
       display: flex; justify-content: space-between; align-items: center;
       padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
@@ -524,7 +521,7 @@ Kopieren
     .s3-detail-row:last-child { border-bottom: none; }
     .s3-dl { font-size: 11px; color: rgba(255,255,255,0.32); }
     .s3-dv { font-size: 11px; color: rgba(255,255,255,0.82); font-weight: 500; text-align: right; max-width: 58%; }
- 
+
     /* Score card */
     .s3-score-card {
       flex: 1; display: flex; flex-direction: column;
@@ -552,7 +549,7 @@ Kopieren
       font-size: 10px; font-weight: 700; letter-spacing: 0.14em; color: var(--accent);
     }
     .s3-tier-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
- 
+
     /* Bar chart */
     .s3-bar-list { display: flex; flex-direction: column; gap: 13px; }
     .s3-bar-item { display: flex; flex-direction: column; gap: 5px; }
@@ -568,7 +565,7 @@ Kopieren
       background: linear-gradient(to right, #7DD3D8, #9de8ec);
       box-shadow: 0 0 6px rgba(125,211,216,0.35);
     }
- 
+
     /* Actions card */
     .s3-actions-card { flex: 1; }
     .s3-action-item {
@@ -595,16 +592,16 @@ Kopieren
     @keyframes s3-loader { 0%,100%{opacity:0.25} 50%{opacity:1} }
     .s3-act-title { font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.85); }
     .s3-act-sub { font-size: 10px; color: rgba(255,255,255,0.28); margin-top: 1px; }
- 
+
     /* ── Scene 4: Terminvermittlung ── */
     .s4-wrap {
       display: flex; gap: 28px; align-items: flex-start;
       width: 100%; max-width: 980px;
     }
- 
+
     /* LEFT column */
     .s4-left { flex: 1; display: flex; flex-direction: column; gap: 14px; }
- 
+
     .s4-sys-hdr { display: flex; flex-direction: column; gap: 4px; }
     .s4-sys-badge {
       display: flex; align-items: center; gap: 7px;
@@ -621,7 +618,7 @@ Kopieren
     }
     .s4-sys-sub { font-size: 12px; color: rgba(255,255,255,0.32); }
     .s4-ac { color: var(--accent); }
- 
+
     /* Check items */
     .s4-checks { display: flex; flex-direction: column; gap: 8px; }
     .s4-check-item {
@@ -635,7 +632,7 @@ Kopieren
       display: flex; align-items: center; justify-content: center;
       color: var(--accent);
     }
- 
+
     /* Slot grid */
     .s4-slots {
       display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
@@ -660,7 +657,7 @@ Kopieren
       color: rgba(255,255,255,0.3); text-transform: uppercase;
     }
     .s4-sl-opt { color: var(--accent); }
- 
+
     /* Appointment card */
     .s4-appt {
       padding: 16px 20px; border-radius: 14px; opacity: 0;
@@ -680,7 +677,7 @@ Kopieren
     .s4-appt-time { font-size: 24px; font-weight: 800; letter-spacing: -0.03em; color: var(--white); margin: 2px 0 8px; }
     .s4-appt-details { display: flex; align-items: center; gap: 8px; font-size: 11px; color: rgba(255,255,255,0.4); }
     .s4-appt-sep { opacity: 0.4; }
- 
+
     /* RIGHT: Phone */
     .s4-right { flex-shrink: 0; opacity: 0; }
     .s4-phone {
@@ -694,7 +691,7 @@ Kopieren
         0 8px 16px rgba(0,0,0,0.5);
       display: flex; flex-direction: column;
     }
- 
+
     /* WhatsApp header */
     .s4-wa-hdr {
       display: flex; align-items: center; gap: 9px;
@@ -713,7 +710,7 @@ Kopieren
     .s4-wa-verified { color: #53BDEB; font-size: 11px; }
     .s4-wa-online { font-size: 11px; color: rgba(255,255,255,0.45); }
     .s4-wa-more { margin-left: auto; font-size: 18px; color: rgba(255,255,255,0.4); }
- 
+
     /* Chat area */
     .s4-wa-chat {
       flex: 1; overflow-y: auto; padding: 12px 10px;
@@ -727,7 +724,7 @@ Kopieren
       background: rgba(255,255,255,0.04); border-radius: 8px;
       padding: 2px 10px; align-self: center;
     }
- 
+
     /* Typing indicator */
     .s4-typing {
       display: flex; gap: 4px; align-items: center;
@@ -746,7 +743,7 @@ Kopieren
       0%,60%,100% { transform: translateY(0); opacity: 0.4; }
       30% { transform: translateY(-4px); opacity: 1; }
     }
- 
+
     /* Messages */
     .s4-msg { display: flex; flex-direction: column; align-items: flex-start; opacity: 0; }
     .s4-bubble {
@@ -763,7 +760,7 @@ Kopieren
     }
     .s4-ticks { color: rgba(255,255,255,0.35); }
     .s4-ticks.blue { color: #53BDEB; }
- 
+
     /* Rich card bubble */
     .s4-rich-card {
       background: #202C33;
@@ -789,7 +786,7 @@ Kopieren
       font-family: 'Inter Tight', sans-serif;
     }
     .s4-ts.card { bottom: 6px; right: 10px; }
- 
+
     /* ── Scene 5: Follow-up Timeline ── */
     .s5-wrap { display:flex; flex-direction:column; align-items:center; gap:28px; width:100%; max-width:960px; }
     .s5-header { text-align:center; opacity:0; }
@@ -820,7 +817,7 @@ Kopieren
     .s5-stat-box { padding:14px 24px; border-radius:12px; display:flex; align-items:center; gap:12px; border-color:rgba(125,211,216,.1); }
     .s5-stat-num { font-size:24px; font-weight:800; color:var(--accent); letter-spacing:-.02em; }
     .s5-stat-lbl { font-size:11px; color:rgba(255,255,255,.4); }
- 
+
     /* ── Scene 6: CRM Dashboard ── */
     .s6-wrap { display:flex; flex-direction:column; gap:14px; width:100%; max-width:980px; }
     .s6-top { display:flex; justify-content:space-between; align-items:center; opacity:0; }
@@ -857,7 +854,7 @@ Kopieren
     .s6-feed-dot { width:6px; height:6px; border-radius:50%; background:var(--accent); margin-top:4px; flex-shrink:0; }
     .s6-feed-main { font-size:11px; font-weight:500; color:rgba(255,255,255,.8); }
     .s6-feed-sub { font-size:10px; color:rgba(255,255,255,.3); margin-top:1px; }
- 
+
     /* ── Scene 7: Review Request ── */
     .s7-wrap { display:flex; flex-direction:column; align-items:center; gap:20px; width:100%; max-width:940px; }
     .s7-header { text-align:center; opacity:0; }
@@ -898,7 +895,7 @@ Kopieren
     .s7-review { font-size:13px; color:rgba(255,255,255,.75); line-height:1.6; font-style:italic; min-height:60px; }
     .s7-g-stats { font-size:11px; color:rgba(255,255,255,.35); }
     .s7-assisted { font-size:9px; font-weight:700; letter-spacing:.12em; color:rgba(125,211,216,.5); text-transform:uppercase; padding:4px 10px; background:rgba(125,211,216,.06); border-radius:6px; align-self:flex-start; }
- 
+
     /* ── Scene 8: Finale ── */
     .s8-wrap { display:flex; flex-direction:column; align-items:center; gap:16px; width:100%; max-width:880px; text-align:center; }
     .s8-logo-zone { opacity:0; }
@@ -920,7 +917,7 @@ Kopieren
     .s8-btn-primary { display:inline-flex; align-items:center; padding:14px 28px; border-radius:12px; background:var(--accent); color:var(--bg); font-family:'Inter Tight',sans-serif; font-size:15px; font-weight:700; text-decoration:none; box-shadow:0 0 24px rgba(125,211,216,.25); }
     .s8-btn-secondary { display:inline-flex; align-items:center; padding:14px 28px; border-radius:12px; background:transparent; border:1px solid rgba(125,211,216,.35); color:var(--accent); font-family:'Inter Tight',sans-serif; font-size:15px; font-weight:600; text-decoration:none; }
     .s8-footer { font-size:11px; color:rgba(255,255,255,.2); letter-spacing:.08em; opacity:0; }
- 
+
     /* ── Polish: Hover lifts ── */
     .s4-slot, .s8-achiev, .s5-stat-box, .s6-lead-card {
       transition: transform 200ms ease, box-shadow 200ms ease;
@@ -939,7 +936,7 @@ Kopieren
     .s4-btn-yes:hover { transform: translateY(-1px); background: rgba(125,211,216,.28) !important; }
     .dot { transition: all .3s; }
     .dot:hover { transform: scaleX(1.4); }
- 
+
     /* ── Loader ── */
     #loader {
       position: fixed; inset: 0; z-index: 9999;
@@ -955,7 +952,7 @@ Kopieren
       0%,100% { filter: drop-shadow(0 0 14px rgba(125,211,216,.35)); }
       50%      { filter: drop-shadow(0 0 32px rgba(125,211,216,.8)) drop-shadow(0 0 60px rgba(125,211,216,.2)); }
     }
- 
+
     /* ── Mobile overlay ── */
     #mob-overlay {
       display: none; position: fixed; inset: 0; z-index: 10000;
@@ -970,7 +967,7 @@ Kopieren
   </style>
 </head>
 <body>
- 
+
 <!-- Loading overlay -->
 <div id="loader">
   <div class="loader-inner">
@@ -979,20 +976,20 @@ Kopieren
     <div class="loader-tagline">Real Estate AI</div>
   </div>
 </div>
- 
+
 <!-- Mobile notice -->
 <div id="mob-overlay">
   <img src="vinano-logo.png" class="mob-logo" alt="Vinano" />
   <div class="mob-title">VINANO</div>
   <div class="mob-msg">Diese Demo ist für Desktop-Bildschirme optimiert.<br>Für beste Erfahrung bitte am Computer öffnen.</div>
 </div>
- 
+
 <!-- Particle canvas -->
 <canvas id="particles"></canvas>
- 
+
 <!-- Progress bar -->
 <div class="progress-bar" id="progressBar"></div>
- 
+
 <!-- Header -->
 <header class="hdr">
   <!-- Logo -->
@@ -1005,7 +1002,7 @@ Kopieren
       <span class="logo-sub">REAL ESTATE AI</span>
     </div>
   </div>
- 
+
   <!-- Controls -->
   <div class="controls">
     <div class="scene-counter" id="sceneCounter"># SZENE 01 / 08</div>
@@ -1032,15 +1029,15 @@ Kopieren
     <div class="dots" id="dots"></div>
   </div>
 </header>
- 
+
 <!-- Scenes -->
 <div class="scenes" id="scenes">
- 
+
   <!-- SZENE 1 -->
   <div class="scene active" data-scene="0">
     <div class="s1-bg" style="background-image:url('property-foto-3.jpg')"></div>
     <div class="s1-wrap">
- 
+
       <!-- Listing Card -->
       <div class="s1-listing glass">
         <div class="s1-location">
@@ -1072,12 +1069,12 @@ Kopieren
           <img src="property-foto-2.jpg" alt="" />
         </div>
       </div>
- 
+
       <!-- Form Card -->
       <div class="s1-form-card glass">
         <h2 class="s1-form-title">Exposé anfordern</h2>
         <p class="s1-form-sub">Kostenlos &amp; unverbindlich</p>
- 
+
         <div class="s1-field">
           <label>NAME</label>
           <input id="s1-name" class="s1-input" type="text" readonly />
@@ -1090,14 +1087,14 @@ Kopieren
           <label>TELEFON</label>
           <input id="s1-tel" class="s1-input" type="tel" readonly />
         </div>
- 
+
         <button id="s1-btn" class="s1-btn-idle">Absenden</button>
         <p id="s1-note" class="s1-ai-note" style="opacity:0">VINANO AI kontaktiert Sie in Kürze</p>
       </div>
- 
+
     </div>
   </div>
- 
+
   <!-- SZENE 2 -->
   <div class="scene" data-scene="1">
     <audio id="s2-audio" preload="auto">
@@ -1105,7 +1102,7 @@ Kopieren
     </audio>
     <div class="s2-atmo"></div>
     <div class="s2-wrap">
- 
+
       <!-- Identity: logo + status floating, no card -->
       <div class="s2-identity">
         <div class="s2-logo-zone">
@@ -1125,24 +1122,24 @@ Kopieren
           <span id="s2-timer">0:00</span>
         </div>
       </div>
- 
+
       <!-- Full-width waveform -->
       <div class="s2-wave-wrap">
         <canvas id="s2-wave"></canvas>
       </div>
- 
+
       <!-- Subtitle panel -->
       <div class="s2-sub-panel glass">
         <div id="s2-sub-text" class="s2-sub-text"></div>
       </div>
- 
+
     </div>
   </div>
- 
+
   <!-- SZENE 3 -->
   <div class="scene" data-scene="2">
     <div class="s3-wrap">
- 
+
       <!-- Status header -->
       <div class="s3-hdr" id="s3-hdr">
         <div class="s3-hdr-badge">
@@ -1151,10 +1148,10 @@ Kopieren
         </div>
         <span class="s3-hdr-time">vor 23 Sekunden · Automatisch durch Vinano AI</span>
       </div>
- 
+
       <!-- 3-column main grid -->
       <div class="s3-main">
- 
+
         <!-- COL A: Lead Profile + Buyer Profile -->
         <div class="s3-col">
           <div class="s3-card s3-profile-card" id="s3-profile-card">
@@ -1176,7 +1173,7 @@ Kopieren
               <span class="s3-dl">Erfasst</span><span class="s3-dv">vor 23 Sekunden</span>
             </div>
           </div>
- 
+
           <div class="s3-card s3-buyer-card" id="s3-buyer-card">
             <div class="s3-card-title">Käufer-Profil</div>
             <div class="s3-detail-row s3-profile-row">
@@ -1193,7 +1190,7 @@ Kopieren
             </div>
           </div>
         </div>
- 
+
         <!-- COL B: Score -->
         <div class="s3-col">
           <div class="s3-card s3-score-card" id="s3-score-card">
@@ -1220,7 +1217,7 @@ Kopieren
             <div class="s3-score-tier"><span class="s3-tier-dot"></span>A-Lead · Priorität Hoch</div>
           </div>
         </div>
- 
+
         <!-- COL C: Criteria Bars + Actions -->
         <div class="s3-col">
           <div class="s3-card s3-bars-card" id="s3-bars-card">
@@ -1244,7 +1241,7 @@ Kopieren
               </div>
             </div>
           </div>
- 
+
           <div class="s3-card s3-actions-card" id="s3-actions-card">
             <div class="s3-card-title">KI-Aktionen</div>
             <div class="s3-action-item" id="s3-act-1">
@@ -1276,24 +1273,24 @@ Kopieren
             </div>
           </div>
         </div>
- 
+
       </div>
     </div>
   </div>
- 
+
   <!-- SZENE 4 -->
   <div class="scene" data-scene="3">
     <div class="s4-wrap">
- 
+
       <!-- LEFT: Vinano System View -->
       <div class="s4-left">
- 
+
         <div class="s4-sys-hdr">
           <div class="s4-sys-badge"><span class="s4-sys-dot"></span>VINANO SYSTEM</div>
           <div class="s4-sys-title">Automatische Terminvermittlung</div>
           <div class="s4-sys-sub">Lead: <span class="s4-ac">Markus Hoffmann</span> &nbsp;·&nbsp; Status: <span class="s4-ac">aktiv</span></div>
         </div>
- 
+
         <!-- Match indicators -->
         <div class="s4-checks">
           <div class="s4-check-item" id="s4-chk1">
@@ -1309,7 +1306,7 @@ Kopieren
             <span>Optimaler Termin identifiziert</span>
           </div>
         </div>
- 
+
         <!-- Time slots 2×2 grid -->
         <div class="s4-slots">
           <div class="s4-slot" id="s4-sl1">
@@ -1337,7 +1334,7 @@ Kopieren
             <div class="s4-sl-badge">Verfügbar</div>
           </div>
         </div>
- 
+
         <!-- Selected appointment card -->
         <div class="s4-appt glass" id="s4-appt">
           <div class="s4-appt-lbl"><span class="s4-appt-dot"></span>VORSCHLAG GESENDET</div>
@@ -1349,13 +1346,13 @@ Kopieren
             <span>Sven Müller (Makler)</span>
           </div>
         </div>
- 
+
       </div>
- 
+
       <!-- RIGHT: Phone mockup -->
       <div class="s4-right" id="s4-phone-wrap">
         <div class="s4-phone">
- 
+
           <!-- WhatsApp header -->
           <div class="s4-wa-hdr">
             <div class="s4-wa-back">‹</div>
@@ -1368,26 +1365,26 @@ Kopieren
             </div>
             <div class="s4-wa-more">⋮</div>
           </div>
- 
+
           <!-- Chat area -->
           <div class="s4-wa-chat" id="s4-wa-chat">
             <div class="s4-wa-date">Heute</div>
- 
+
             <!-- Typing indicator (shared, toggled by GSAP) -->
             <div class="s4-typing" id="s4-typing">
               <span></span><span></span><span></span>
             </div>
- 
+
             <!-- Message 1 -->
             <div class="s4-msg" id="s4-msg1">
               <div class="s4-bubble">Hallo Markus 👋 Schön, dass Sie sich für das Penthouse im Westend interessieren!<span class="s4-ts">15:03 <span class="s4-ticks">✓✓</span></span></div>
             </div>
- 
+
             <!-- Message 2 -->
             <div class="s4-msg" id="s4-msg2">
               <div class="s4-bubble">Ich habe für Sie einen passenden Besichtigungstermin gefunden:<span class="s4-ts">15:03 <span class="s4-ticks">✓✓</span></span></div>
             </div>
- 
+
             <!-- Appointment rich card -->
             <div class="s4-msg" id="s4-msg3">
               <div class="s4-rich-card">
@@ -1403,19 +1400,19 @@ Kopieren
                 <span class="s4-ts card">15:04 <span class="s4-ticks blue">✓✓</span></span>
               </div>
             </div>
- 
+
             <!-- Message 4 -->
             <div class="s4-msg" id="s4-msg4">
               <div class="s4-bubble">Bei Rückfragen stehe ich jederzeit gerne zur Verfügung. 🤝<span class="s4-ts">15:04 <span class="s4-ticks">✓✓</span></span></div>
             </div>
- 
+
           </div>
         </div>
       </div>
- 
+
     </div>
   </div>
- 
+
   <!-- SZENE 5 -->
   <div class="scene" data-scene="4">
     <div class="s5-wrap">
@@ -1424,7 +1421,7 @@ Kopieren
         <div class="s5-title">7 Tage rund um den Besichtigungstermin</div>
         <div class="s5-sub">Lead: <span class="s5-ac">Markus Hoffmann</span> &nbsp;·&nbsp; Mi. 7. Mai · 15:00 Uhr</div>
       </div>
- 
+
       <div class="s5-tl">
         <div class="s5-track"><div class="s5-track-fill" id="s5-line"></div></div>
         <div class="s5-nodes">
@@ -1465,7 +1462,7 @@ Kopieren
           </div>
         </div>
       </div>
- 
+
       <div class="s5-stat-row" id="s5-stat">
         <div class="s5-stat-box glass">
           <span class="s5-stat-num">247</span>
@@ -1478,7 +1475,7 @@ Kopieren
       </div>
     </div>
   </div>
- 
+
   <!-- SZENE 6 -->
   <div class="scene" data-scene="5">
     <div class="s6-wrap">
@@ -1539,7 +1536,7 @@ Kopieren
       </div>
     </div>
   </div>
- 
+
   <!-- SZENE 7 -->
   <div class="scene" data-scene="6">
     <div class="s7-wrap">
@@ -1588,7 +1585,7 @@ Kopieren
       </div>
     </div>
   </div>
- 
+
   <!-- SZENE 8 -->
   <div class="scene" data-scene="7">
     <div class="s8-wrap">
@@ -1616,14 +1613,14 @@ Kopieren
       <div class="s8-footer" id="s8-footer">Frankfurt · Deutschland · Made for Real Estate Professionals</div>
     </div>
   </div>
- 
+
 </div>
- 
+
 <!-- Keyboard hint -->
 <div class="kbd-hint" id="kbdHint">
   <kbd>←</kbd><kbd>→</kbd> navigieren &nbsp;·&nbsp; <kbd>Space</kbd> Pause/Play
 </div>
- 
+
 <script>
 // ── Config ──────────────────────────────────────────────────────
 const SCENE_DURATION = 8000; // ms default
@@ -1633,7 +1630,7 @@ const SCENE_DURATIONS = new Map([[3, 10000], [7, 9000]]);
 function getSceneDur() { return SCENE_DURATIONS.get(current) || SCENE_DURATION; }
 // Console helper: goToScene(4) → jumps to scene 4
 window.goToScene = (n) => goTo(n - 1);
- 
+
 // ── State ────────────────────────────────────────────────────────
 let current    = 0;
 let playing    = true;
@@ -1641,7 +1638,7 @@ let timer      = null;
 let startTime  = null;
 let elapsed    = 0;
 let kbdTimeout = null;
- 
+
 // ── DOM refs ─────────────────────────────────────────────────────
 const scenes      = Array.from(document.querySelectorAll('.scene'));
 const counter     = document.getElementById('sceneCounter');
@@ -1651,7 +1648,7 @@ const iconPlay    = document.getElementById('iconPlay');
 const iconPause   = document.getElementById('iconPause');
 const dotsEl      = document.getElementById('dots');
 const kbdHint     = document.getElementById('kbdHint');
- 
+
 // ── Build dots ───────────────────────────────────────────────────
 for (let i = 0; i < TOTAL_SCENES; i++) {
   const d = document.createElement('div');
@@ -1661,7 +1658,7 @@ for (let i = 0; i < TOTAL_SCENES; i++) {
   dotsEl.appendChild(d);
 }
 const dotEls = Array.from(dotsEl.querySelectorAll('.dot'));
- 
+
 // ── RAF progress loop ─────────────────────────────────────────────
 let rafId = null;
 function tick(ts) {
@@ -1676,13 +1673,13 @@ function tick(ts) {
     rafId = requestAnimationFrame(tick);
   }
 }
- 
+
 function startTick() {
   cancelAnimationFrame(rafId);
   startTime = null;
   rafId = requestAnimationFrame(tick);
 }
- 
+
 function pauseTick() {
   if (startTime !== null) {
     elapsed += performance.now() - startTime;
@@ -1690,7 +1687,7 @@ function pauseTick() {
   }
   cancelAnimationFrame(rafId);
 }
- 
+
 // ── Navigation ────────────────────────────────────────────────────
 function activate(idx) {
   const prev = current;
@@ -1702,7 +1699,7 @@ function activate(idx) {
   if (prev === 5) scene6Leave();
   if (prev === 6) scene7Leave();
   if (prev === 7) scene8Leave();
- 
+
   scenes[current].classList.remove('active');
   dotEls[current].classList.remove('active');
   current = ((idx % TOTAL_SCENES) + TOTAL_SCENES) % TOTAL_SCENES;
@@ -1711,7 +1708,7 @@ function activate(idx) {
   counter.textContent = `# SZENE ${String(current + 1).padStart(2,'0')} / ${String(TOTAL_SCENES).padStart(2,'0')}`;
   elapsed = 0;
   progressBar.style.width = '0%';
- 
+
   if (current === 0) scene1Enter(); else s1Clear();
   if (current === 1) { scene2Enter(); return; } // audio controls timing
   if (current === 2) scene3Enter();
@@ -1722,17 +1719,17 @@ function activate(idx) {
   if (current === 7) scene8Enter();
   if (playing) startTick();
 }
- 
+
 function advance() {
   if (current === 7) return; // finale – hold, don't loop
   activate(current + 1);
 }
- 
+
 function goTo(idx) {
   elapsed = 0;
   activate(idx);
 }
- 
+
 // ── Play / Pause ──────────────────────────────────────────────────
 function setPlaying(val) {
   playing = val;
@@ -1754,11 +1751,11 @@ function setPlaying(val) {
     }
   }
 }
- 
+
 btnPlay.addEventListener('click', () => setPlaying(!playing));
 document.getElementById('btnPrev').addEventListener('click', () => { elapsed=0; activate(current - 1); });
 document.getElementById('btnNext').addEventListener('click', () => { elapsed=0; activate(current + 1); });
- 
+
 // ── Keyboard ──────────────────────────────────────────────────────
 document.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
@@ -1767,30 +1764,30 @@ document.addEventListener('keydown', e => {
   if (e.key === 'ArrowRight') { elapsed=0; activate(current + 1); }
   if (e.key === ' ')          { e.preventDefault(); setPlaying(!playing); }
 });
- 
+
 function showKbd() {
   kbdHint.classList.remove('hidden');
   clearTimeout(kbdTimeout);
   kbdTimeout = setTimeout(() => kbdHint.classList.add('hidden'), 3000);
 }
- 
+
 // ── Particle system ────────────────────────────────────────────────
 (function particles() {
   const canvas = document.getElementById('particles');
   const ctx    = canvas.getContext('2d');
   let W, H, pts;
- 
+
   const COUNT = 55;
   const CYAN  = [125, 211, 216];
- 
+
   function resize() {
     W = canvas.width  = window.innerWidth;
     H = canvas.height = window.innerHeight;
     init();
   }
- 
+
   function rand(min, max) { return min + Math.random() * (max - min); }
- 
+
   function init() {
     pts = Array.from({ length: COUNT }, () => ({
       x:  rand(0, W), y:  rand(0, H),
@@ -1801,7 +1798,7 @@ function showKbd() {
       pulseSpeed: rand(0.003, 0.008),
     }));
   }
- 
+
   function drawFrame() {
     ctx.clearRect(0, 0, W, H);
     pts.forEach(p => {
@@ -1826,12 +1823,12 @@ function showKbd() {
     });
     requestAnimationFrame(drawFrame);
   }
- 
+
   window.addEventListener('resize', resize);
   resize();
   drawFrame();
 })();
- 
+
 // ── Scene 2: AI-Anruf ─────────────────────────────────────────────
 const s2Audio = document.getElementById('s2-audio');
 let s2RafId         = null;
@@ -1840,7 +1837,7 @@ let s2FallbackTimer = null;
 let s2SimMode       = false;
 let s2SimStart      = 0;
 const S2_SIM_DUR    = 15;
- 
+
 // ── Subtitle word timings – adjust here to resync ─────────────────
 const S2_CAPTIONS = [
   { words: ['Hallo,','ich','sehe,','Sie','interessieren','sich','für','diese','Immobilie.'],
@@ -1850,13 +1847,13 @@ const S2_CAPTIONS = [
   { words: ['Zuvor','möchte','ich','Sie','aber','noch','fragen:','Suchen','Sie','ein','Eigenheim','oder','eine','Kapitalanlage?'],
     times:  [9.4,   9.8,    10.08,10.3, 10.58,10.88,11.18,   11.58,  11.88,12.12,12.42,     12.92,13.22,13.52], end: 14.5 },
 ];
- 
+
 // Amplitude envelope [time, amp 0-1] – controls waveform height
 const S2_ENV = [
   [0,0],[0.45,0.1],[0.58,0.92],[3.88,0.92],[4.18,0.08],
   [4.3,0.9],[8.9,0.9],[9.28,0.06],[9.4,0.92],[14.35,0.92],[14.72,0.04],[16,0],
 ];
- 
+
 function s2Lerp(t) {
   for (let i = 0; i < S2_ENV.length - 1; i++) {
     const [t0,a0] = S2_ENV[i], [t1,a1] = S2_ENV[i+1];
@@ -1867,20 +1864,20 @@ function s2Lerp(t) {
   }
   return 0;
 }
- 
+
 function s2DrawWave(audioT) {
   const canvas = document.getElementById('s2-wave');
   if (!canvas || !canvas._lw) return;
   const ctx = canvas.getContext('2d');
   const W = canvas._lw, H = canvas._lh;
   ctx.clearRect(0, 0, W, H);
- 
+
   const amp = s2Lerp(audioT) * (H * 0.46);
   const now = performance.now() * 0.001;
   const cy  = H / 2;
   const N   = Math.ceil(W) + 1;
   const pts = new Float32Array(N);
- 
+
   // Multi-frequency voice wave with sin(πx) bell envelope – peaks center
   for (let x = 0; x < N; x++) {
     const nx  = x / W;
@@ -1892,7 +1889,7 @@ function s2DrawWave(audioT) {
       Math.sin(nx * 10 + now * 1.6)  * 0.21
     ) * amp * env;
   }
- 
+
   // Gradient fill between mirrored top/bottom waves
   const grad = ctx.createLinearGradient(0, 0, 0, H);
   grad.addColorStop(0,   'rgba(125,211,216,0.14)');
@@ -1907,7 +1904,7 @@ function s2DrawWave(audioT) {
   ctx.closePath();
   ctx.fillStyle = grad;
   ctx.fill();
- 
+
   // Top + bottom lines (mirror)
   ctx.strokeStyle = 'rgba(125,211,216,0.88)';
   ctx.lineWidth   = 1.5;
@@ -1923,7 +1920,7 @@ function s2DrawWave(audioT) {
     ctx.stroke();
   }
 }
- 
+
 function s2RenderCaptions(t) {
   const el = document.getElementById('s2-sub-text');
   if (!el) return;
@@ -1938,13 +1935,13 @@ function s2RenderCaptions(t) {
     return `<span class="s2-word ${cls}">${word}</span>`;
   }).join(' ');
 }
- 
+
 function s2GetT() {
   return s2SimMode
     ? Math.min((performance.now() - s2SimStart) / 1000, S2_SIM_DUR)
     : s2Audio.currentTime;
 }
- 
+
 function s2Tick() {
   if (current !== 1) return;
   const t   = s2GetT();
@@ -1957,7 +1954,7 @@ function s2Tick() {
   if (s2SimMode && t >= S2_SIM_DUR) { if (current===1) advance(); return; }
   s2RafId = requestAnimationFrame(s2Tick);
 }
- 
+
 function s2InitCanvas() {
   const c = document.getElementById('s2-wave');
   if (!c) return;
@@ -1968,7 +1965,7 @@ function s2InitCanvas() {
     c.getContext('2d').scale(dpr, dpr);
   }
 }
- 
+
 function scene2Enter() {
   clearTimeout(s2StartTimer);
   clearTimeout(s2FallbackTimer);
@@ -1978,7 +1975,7 @@ function scene2Enter() {
   progressBar.style.width = '0%';
   const te = document.getElementById('s2-timer'); if (te) te.textContent = '0:00';
   const se = document.getElementById('s2-sub-text'); if (se) se.innerHTML = '';
- 
+
   setTimeout(() => {
     s2InitCanvas();
     s2DrawWave(0);
@@ -1992,7 +1989,7 @@ function scene2Enter() {
     }, 500);
   }, 50);
 }
- 
+
 function scene2Leave() {
   clearTimeout(s2StartTimer);
   clearTimeout(s2FallbackTimer);
@@ -2000,14 +1997,14 @@ function scene2Leave() {
   s2Audio.pause();
   s2Audio.currentTime = 0;
 }
- 
+
 s2Audio.addEventListener('ended', () => {
   clearTimeout(s2FallbackTimer);
   cancelAnimationFrame(s2RafId);
   progressBar.style.width = '100%';
   if (current === 1) setTimeout(() => { if (current === 1) advance(); }, 1000);
 });
- 
+
 // ── Scene 3: Lead-Score Dashboard ─────────────────────────────────
 // ── Config: change these values to update dashboard data ──────────
 const S3_CONFIG = {
@@ -2032,13 +2029,13 @@ const S3_CONFIG = {
     actStagger:0.45,  // delay between action items
   }
 };
- 
+
 let s3Tl = null;
- 
+
 function scene3Enter() {
   if (typeof gsap === 'undefined') return;
   if (s3Tl) s3Tl.kill();
- 
+
   // Reset all elements to initial (hidden) state
   gsap.set(['#s3-profile-card','#s3-buyer-card','#s3-score-card','#s3-bars-card','#s3-actions-card'],
     { opacity: 0, y: 16 });
@@ -2054,23 +2051,23 @@ function scene3Enter() {
     if (bar) bar.style.width = '0%';
     if (pct) pct.textContent = '0%';
   });
- 
+
   const T = S3_CONFIG.t;
   s3Tl = gsap.timeline();
- 
+
   // Header badge
   s3Tl.to('#s3-hdr', { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, T.header);
- 
+
   // Cards appear with stagger
   s3Tl.to(['#s3-profile-card', '#s3-score-card', '#s3-bars-card'],
     { opacity: 1, y: 0, duration: 0.55, stagger: 0.1, ease: 'power2.out' }, T.cards);
   s3Tl.to(['#s3-buyer-card', '#s3-actions-card'],
     { opacity: 1, y: 0, duration: 0.55, stagger: 0.1, ease: 'power2.out' }, T.cards + 0.25);
- 
+
   // Profile rows stagger in
   s3Tl.to('.s3-profile-row',
     { opacity: 1, x: 0, duration: 0.32, stagger: 0.07, ease: 'power2.out' }, T.rows);
- 
+
   // Score counter
   const scoreObj = { val: 0 };
   s3Tl.to(scoreObj, {
@@ -2080,7 +2077,7 @@ function scene3Enter() {
       if (n) n.textContent = Math.round(scoreObj.val);
     }
   }, T.score);
- 
+
   // Score ring
   s3Tl.to('#s3-arc', {
     strokeDashoffset: 339 * (1 - S3_CONFIG.score / 100),
@@ -2088,7 +2085,7 @@ function scene3Enter() {
   }, T.score);
   // Bounce when score hits final value
   s3Tl.to('#s3-score-num', { scale: 1.08, duration: 0.1, yoyo: true, repeat: 1, ease: 'power2.out', transformOrigin: '50% 50%' }, T.score + T.scoreDur + 0.04);
- 
+
   // Criteria bars – staggered
   S3_CONFIG.bars.forEach((b, i) => {
     const obj = { v: 0 };
@@ -2102,17 +2099,17 @@ function scene3Enter() {
       }
     }, T.bars + i * T.barStagger);
   });
- 
+
   // Action items pop in
   s3Tl.to('.s3-action-item',
     { opacity: 1, x: 0, duration: 0.45, stagger: T.actStagger, ease: 'back.out(1.5)' },
     T.actions);
 }
- 
+
 function scene3Leave() {
   if (s3Tl) { s3Tl.kill(); s3Tl = null; }
 }
- 
+
 // ── Scene 4: Terminvermittlung ─────────────────────────────────────
 // ── Config: adjust texts & timing here ────────────────────────────
 const S4_CONFIG = {
@@ -2141,67 +2138,67 @@ const S4_CONFIG = {
     msg4:       8.95,  // last message
   }
 };
- 
+
 let s4Tl = null;
- 
+
 function scene4Enter() {
   if (typeof gsap === 'undefined') return;
   if (s4Tl) s4Tl.kill();
- 
+
   const T = S4_CONFIG.t;
- 
+
   // Reset all to initial hidden state
   gsap.set(['.s4-slot', '.s4-check-item', '#s4-appt'], { opacity: 0, y: 10 });
   gsap.set('#s4-phone-wrap', { opacity: 0, x: 36 });
   gsap.set(['#s4-typing', '#s4-msg1', '#s4-msg2', '#s4-msg3', '#s4-msg4'],
     { opacity: 0, scale: 0.88, y: 6 });
- 
+
   // Reset chat scroll
   const chat = document.getElementById('s4-wa-chat');
   if (chat) chat.scrollTop = 0;
- 
+
   s4Tl = gsap.timeline();
- 
+
   // Slots appear with stagger
   s4Tl.to('.s4-slot', { opacity: 1, y: 0, duration: 0.38, stagger: 0.12, ease: 'power2.out' }, T.slots);
- 
+
   // Match indicators pop in
   s4Tl.to('.s4-check-item', { opacity: 1, x: 0, y: 0, duration: 0.38, stagger: 0.32, ease: 'back.out(1.4)' }, T.checks);
- 
+
   // Appointment card
   s4Tl.to('#s4-appt', { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, T.apptCard);
- 
+
   // Phone slides in from right
   s4Tl.to('#s4-phone-wrap', { opacity: 1, x: 0, duration: 0.65, ease: 'power3.out' }, T.phoneIn);
- 
+
   // Helper: scroll chat to bottom
   const scrollChat = () => { if (chat) chat.scrollTop = chat.scrollHeight; };
- 
+
   // Typing 1 → msg 1
   s4Tl.to('#s4-typing', { opacity: 1, scale: 1, y: 0, duration: 0.22, ease: 'back.out(1.5)' }, T.typing1);
   s4Tl.set('#s4-typing', { opacity: 0 }, T.msg1 - 0.05);
   s4Tl.to('#s4-msg1', { opacity: 1, scale: 1, y: 0, duration: 0.3, ease: 'back.out(1.2)', onComplete: scrollChat }, T.msg1);
- 
+
   // Typing 2 → msg 2
   s4Tl.to('#s4-typing', { opacity: 1, scale: 1, y: 0, duration: 0.18, ease: 'back.out' }, T.typing2);
   s4Tl.set('#s4-typing', { opacity: 0 }, T.msg2 - 0.05);
   s4Tl.to('#s4-msg2', { opacity: 1, scale: 1, y: 0, duration: 0.3, ease: 'back.out(1.2)', onComplete: scrollChat }, T.msg2);
- 
+
   // Typing 3 → appointment card
   s4Tl.to('#s4-typing', { opacity: 1, scale: 1, y: 0, duration: 0.18, ease: 'back.out' }, T.typing3);
   s4Tl.set('#s4-typing', { opacity: 0 }, T.msg3 - 0.05);
   s4Tl.to('#s4-msg3', { opacity: 1, scale: 1, y: 0, duration: 0.45, ease: 'back.out(1.1)', onComplete: scrollChat }, T.msg3);
- 
+
   // Typing 4 → last message
   s4Tl.to('#s4-typing', { opacity: 1, scale: 1, y: 0, duration: 0.18, ease: 'back.out' }, T.typing4);
   s4Tl.set('#s4-typing', { opacity: 0 }, T.msg4 - 0.05);
   s4Tl.to('#s4-msg4', { opacity: 1, scale: 1, y: 0, duration: 0.28, ease: 'back.out', onComplete: scrollChat }, T.msg4);
 }
- 
+
 function scene4Leave() {
   if (s4Tl) { s4Tl.kill(); s4Tl = null; }
 }
- 
+
 // ── Scene 5: Follow-up Timeline ───────────────────────────────────
 let s5Tl = null;
 function scene5Enter() {
@@ -2220,7 +2217,7 @@ function scene5Enter() {
   s5Tl.to('.s5-stat-row', { opacity: 1, duration: 0.5, ease: 'power2.out' }, 3.0);
 }
 function scene5Leave() { if (s5Tl) { s5Tl.kill(); s5Tl = null; } }
- 
+
 // ── Scene 6: CRM Dashboard ────────────────────────────────────────
 let s6Tl = null;
 const S6_CONFIG = {
@@ -2259,7 +2256,7 @@ function scene6Enter() {
   s6Tl.to('#s6-markus', { boxShadow: '0 0 24px rgba(125,211,216,.25),0 0 0 1px rgba(125,211,216,.4)', duration: 0.8, yoyo: true, repeat: 2, ease: 'power2.inOut' }, 4.0);
 }
 function scene6Leave() { if (s6Tl) { s6Tl.kill(); s6Tl = null; } }
- 
+
 // ── Scene 7: Review Request ───────────────────────────────────────
 let s7Tl = null;
 // Edit review text here
@@ -2296,7 +2293,7 @@ function scene7Enter() {
   }
 }
 function scene7Leave() { if (s7Tl) { s7Tl.kill(); s7Tl = null; } }
- 
+
 // ── Scene 8: Finale ───────────────────────────────────────────────
 let s8Tl = null;
 // Edit achievement values here
@@ -2339,15 +2336,15 @@ function scene8Enter() {
   s8Tl.to('#s8-logo img', { filter: 'drop-shadow(0 0 28px rgba(125,211,216,.7))', duration: 2, yoyo: true, repeat: -1, ease: 'power2.inOut' }, 4.0);
 }
 function scene8Leave() { if (s8Tl) { s8Tl.kill(); s8Tl = null; } }
- 
+
 // ── Scene 1: Typing animation ─────────────────────────────────────
 const s1Timers = [];
- 
+
 function s1Clear() {
   s1Timers.forEach(id => { clearTimeout(id); clearInterval(id); });
   s1Timers.length = 0;
 }
- 
+
 function s1Type(el, text, speed, cb) {
   el.value = '';
   let i = 0;
@@ -2357,7 +2354,7 @@ function s1Type(el, text, speed, cb) {
   }, speed);
   s1Timers.push(iv);
 }
- 
+
 function scene1Enter() {
   s1Clear();
   const nameEl  = document.getElementById('s1-name');
@@ -2365,12 +2362,12 @@ function scene1Enter() {
   const telEl   = document.getElementById('s1-tel');
   const btn     = document.getElementById('s1-btn');
   const note    = document.getElementById('s1-note');
- 
+
   nameEl.value = ''; emailEl.value = ''; telEl.value = '';
   btn.className = 's1-btn-idle';
   btn.textContent = 'Absenden';
   note.style.opacity = '0';
- 
+
   const t0 = setTimeout(() => {
     s1Type(nameEl, 'Markus Hoffmann', 62, () => {
       const t1 = setTimeout(() => {
@@ -2394,7 +2391,7 @@ function scene1Enter() {
   }, 500);
   s1Timers.push(t0);
 }
- 
+
 // ── Init ──────────────────────────────────────────────────────────
 scene1Enter(); // pre-warm animations while loader is visible
 const loaderEl = document.getElementById('loader');
@@ -2415,4 +2412,3 @@ if (loaderEl) {
 </script>
 </body>
 </html>
- 
